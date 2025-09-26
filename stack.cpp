@@ -64,6 +64,7 @@ void StackInitialize(stack_t *const stk) {
 
     size_t const INIT_STACK_CAPACITY = 8;
 
+    stk->error = NO_ERROR;
     stk->size = 0;
     stk->capacity = INIT_STACK_CAPACITY;
     stk->data = (int *)calloc(stk->capacity, sizeof(*stk->data));
