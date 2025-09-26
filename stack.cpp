@@ -5,7 +5,7 @@
 
 
 #ifndef NDEBUG
-    #define CHECK_ERROR(stk) ((stk) != NULL && ((stk)->error = StackVerify(stk)) != STACK_NO_ERROR && (StackDump(stderr, stk), 1))
+    #define CHECK_ERROR(stk) (((stk) == NULL || ((stk)->error = StackVerify(stk)) != STACK_NO_ERROR) && (StackDump(stderr, stk), 1))
 #else
     #define CHECK_ERROR(stk)
 #endif
