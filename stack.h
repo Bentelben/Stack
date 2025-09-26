@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const int DEFAULT_STACK_VALUE = 42;
+const int DEFAULT_STACK_VALUE = -1189;
 
 enum stack_error_t {
     STACK_NO_ERROR = 0,

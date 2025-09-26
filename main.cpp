@@ -4,7 +4,7 @@
 #include <assert.h>
 
 int main() {
-    stack_t stack = {};
+    stack_t stack;
     stack_t *stk = &stack;
 
     StackInitialize(stk);
@@ -22,8 +22,12 @@ int main() {
     StackDump(stderr, stk);
 
     StackFinalize(stk);
+    StackPop(stk);
+    StackPush(stk, 8);
+    StackPush(stk, 1);
     StackFinalize(stk);
     StackInitialize(stk);
+    StackPop(stk);
     StackFinalize(stk);
     StackFinalize(stk);
 }
