@@ -16,8 +16,8 @@ static void FPrintStackError(FILE *const file, stack_error_t const error) {
     assert(file);
 
     switch (error) {
-#define _PRINT_ERROR_ENUM(value)                          \
-        case STACK_ ## value ## _ERROR:                   \
+#define _PRINT_ERROR_ENUM(value)                 \
+        case STACK_ ## value ## _ERROR:          \
             fprintf(file, #value "_ERROR" "\n"); \
             break;
         _PRINT_ERROR_ENUM(NO)
