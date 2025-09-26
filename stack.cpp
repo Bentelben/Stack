@@ -4,12 +4,12 @@
 
 
 #ifndef NDEBUG
-    #define CHECK_STACK(stk) ((stk) != NULL && ((stk)->error = StackVerify(stk)) != STACK_NO_ERROR && (STACK_DUMP(stderr, stk), 1))
+    #define CHECK_STACK(stk) ((stk) != NULL && ((stk)->error = StackVerify(stk)) != STACK_NO_ERROR && (StackDump(stderr, stk), 1))
 #else
     #define CHECK_STACK(stk)
 #endif
 
-#define SET_ERROR(stk, error_code) {if ((stk) != NULL) (stk)->error = (error_code); STACK_DUMP(stderr, stk);}
+#define SET_ERROR(stk, error_code) {if ((stk) != NULL) (stk)->error = (error_code); StackDump(stderr, stk);}
 
 void _StackDump(FILE *file, stack_t const *const stk, char const *const filename, size_t const line) {
     if (file == NULL) {

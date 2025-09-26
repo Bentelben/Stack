@@ -19,7 +19,7 @@ int main() {
     StackPop(stk);
     StackPop(stk);
    
-    STACK_DUMP(stderr, stk);
+    StackDump(stderr, stk);
 
     StackFinalize(stk);
     StackFinalize(stk);

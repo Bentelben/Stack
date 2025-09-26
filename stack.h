@@ -22,8 +22,8 @@ struct stack_t {
     stack_error_t error;
 };
 
-#define STACK_DUMP(logfile, stk) _StackDump(logfile, stk, __FILE__, __LINE__)
 
+#define StackDump(logfile, stk) _StackDump(logfile, stk, __FILE__, __LINE__)
 void _StackDump(FILE *file, stack_t const *stk, char const *filename, size_t line);
 
 void StackInitialize(stack_t *stk);
