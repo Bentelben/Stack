@@ -7,6 +7,7 @@ int main() {
     stack_t stack;
     stack_t *stk = &stack;
 
+    StackInitialize(NULL);
     StackInitialize(stk);
 
     StackPush(stk, 11);
