@@ -1,6 +1,7 @@
 #include "stack.h"
 
 #include <assert.h>
+#include <stdint.h>
 
 
 #ifndef NDEBUG
@@ -10,7 +11,6 @@
 #endif
 
 #define SET_ERROR(stk, error_code) {if ((stk) != NULL) (stk)->error = (error_code); StackDump(stderr, stk);}
-
 
 static void FPrintStackError(FILE *const file, stack_error_t const error) {
     assert(file);
@@ -26,6 +26,7 @@ static void FPrintStackError(FILE *const file, stack_error_t const error) {
         _PRINT_ERROR_ENUM(DATA_NULL)
         _PRINT_ERROR_ENUM(POP_NO_ITEMS)
         _PRINT_ERROR_ENUM(SIZE_OVERFLOW_CAPACITY)
+        _PRINT_ERROR_ENUM(PUSH_MAX_CAPACITY_SIZE)
 #undef _PRINT_ERROR_ENUM
         default:
             fprintf(file, "%d\n", error);
@@ -92,16 +93,16 @@ static stack_error_t StackVerify(const stack_t *const stk) {
 }
 
 void StackInitialize(stack_t *const stk) {
+    size_t const INIT_STACK_CAPACITY = 8;
+
     if (stk == NULL) {
         SET_ERROR(stk, STACK_NULL_ERROR);
         return;
     }
 
-    size_t const INIT_STACK_CAPACITY = 8;
-
-    stk->error = STACK_NO_ERROR;
     stk->size = 0;
     stk->capacity = INIT_STACK_CAPACITY;
+    stk->error = STACK_NO_ERROR;
     stk->data = (int *)calloc(stk->capacity, sizeof(*stk->data));
     if (stk->data == NULL) {
         SET_ERROR(stk, STACK_ALLOC_ERROR);
@@ -119,8 +120,16 @@ void StackInitialize(stack_t *const stk) {
 void StackPush(stack_t *const stk, int const elem) {
     if (CHECK_ERROR(stk)) return;
 
-    if (stk->size + 1 > stk->capacity) {
-        stk->capacity *= 2; // TODO check for size_t overflow
+    if (stk->capacity == 0 || stk->size > stk->capacity - 1) {
+        if (stk->capacity == SIZE_MAX) {
+            SET_ERROR(stk, STACK_PUSH_MAX_CAPACITY_SIZE_ERROR);
+            return;
+        }
+        if (stk->capacity > SIZE_MAX / 2)
+            stk->capacity = SIZE_MAX;
+        else
+            stk->capacity *= 2;
+
         stk->data = (int *)realloc(stk->data, stk->capacity*sizeof(stk->data));
         if (stk->data == NULL) {
             SET_ERROR(stk, STACK_ALLOC_ERROR);
