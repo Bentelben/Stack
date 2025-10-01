@@ -29,7 +29,7 @@ static bool IsKanareyka(stack_elem_t const *const dest) {
 
 #define SET_ERROR(error_name, value) \
     if (value) stk->error |= (TRUE_BIT << GET_ERROR_CODE(error_name)); \
-    else stk->error &= ~(TRUE_BIT << GET_ERROR_CODE(error_name));
+    else stk->error = stk->error & (stack_error_t)(~(TRUE_BIT << GET_ERROR_CODE(error_name)));
 
 #define RETURN_ERROR_IF(value, error_name) \
     if (value) {                           \
@@ -125,7 +125,7 @@ static void FPrintStackError(FILE *const file, stack_error_t error) {
     while(error > 0) {
         if (error >= (TRUE_BIT << i)) {
 
-            error -= TRUE_BIT << i;
+            error = error - (stack_error_t)(TRUE_BIT << i);
 
             switch (i) {
                 PRINT_ENUM_(IS_NULL)

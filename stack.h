@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-
 // Element settings
 typedef int stack_elem_t;
 const stack_elem_t POISON_STACK_VALUE = -1189;
@@ -28,9 +27,7 @@ void FPrintStackElement(FILE *file, stack_elem_t value) {
 
 
 
-
-
-typedef uint32_t stack_error_t;
+typedef uint16_t stack_error_t;
 
 enum stack_error_offset_t {
     STACK_IS_NULL_ERROR,
