@@ -31,16 +31,15 @@ static bool IsKanareyka(stack_elem_t const *const dest) {
     if (value) stk->error |= (TRUE_BIT << GET_ERROR_CODE(error_name)); \
     else stk->error = stk->error & (stack_error_t)(~(TRUE_BIT << GET_ERROR_CODE(error_name)));
 
-#define RETURN_ERROR_IF(value, error_name) \
-    if (value) {                           \
-        ADD_ERROR(error_name)              \
-        StackDump(stderr, stk);            \
-    }                                      \
+#define RETURN_ERROR_IF(value, error_name)       \
+    if (value) {                                 \
+        ADD_ERROR(error_name)                    \
+        StackDump_(stderr, stk, filename, line); \
+    }                                            \
     if (value) return
 
 
 #ifndef NDEBUG
-
     #define CHECK_RETURN if (!StackVerify(stk) && (StackDump(stderr, stk), 1)) return
 
     static bool StackVerify(stack_t *const stk) {
@@ -73,13 +72,11 @@ static bool IsKanareyka(stack_elem_t const *const dest) {
         
         return stk->error == 0;
     }
-
 #else
     #define CHECK_RETURN
 #endif
 
-
-static void ResizeStack(stack_t *const stk, size_t const new_capacity) {
+static void ResizeStack(stack_t *const stk, size_t const new_capacity, char const *const filename, size_t const line) {
     assert(stk);
     assert(stk->size <= new_capacity);
 
@@ -161,7 +158,7 @@ static void FPrintStackError(FILE *const file, stack_error_t error) {
 
 #define PRINT_TABBED_(tab_count, format, ...) fprintf(file, "%*s" format, (int)((tab_count)*TAB_SIZE), "", ##__VA_ARGS__)
 
-void _stackDump(FILE *file, stack_t const *const stk, char const *const filename, size_t const line) {
+void StackDump_(FILE *file, stack_t const *const stk, char const *const filename, size_t const line) {
     const size_t TAB_SIZE = 4;
 
     if (file == NULL) {
@@ -210,28 +207,28 @@ void _stackDump(FILE *file, stack_t const *const stk, char const *const filename
 #undef PRINT_TABBED_
 
 
-void StackInitialize(stack_t *const stk) {
+void StackInitialize_(stack_t *const stk, char const *const filename, size_t const line) {
     RETURN_ERROR_IF(stk == NULL, IS_NULL);
 
     stk->size = 0;
     stk->capacity = 0;
     stk->error = 0;
     stk->data = NULL;
-    ResizeStack(stk, INIT_STACK_CAPACITY);
+    ResizeStack(stk, INIT_STACK_CAPACITY, filename, line);
 
     CHECK_RETURN;
 }
 
-void StackPush(stack_t *const stk, stack_elem_t const elem) {
+void StackPush_(stack_t *const stk, stack_elem_t const elem, char const *const filename, size_t const line) {
     CHECK_RETURN;
 
     if (stk->size == stk->capacity) {
         RETURN_ERROR_IF(stk->capacity == MAX_STACK_CAPACITY, PUSH_MAX_CAPACITY_SIZE);
 
         if (stk->capacity > MAX_STACK_CAPACITY/2)
-            ResizeStack(stk, MAX_STACK_CAPACITY);
+            ResizeStack(stk, MAX_STACK_CAPACITY, filename, line);
         else
-            ResizeStack(stk, stk->capacity * 2);
+            ResizeStack(stk, stk->capacity * 2, filename, line);
 
         CHECK_RETURN;
     }
@@ -241,16 +238,16 @@ void StackPush(stack_t *const stk, stack_elem_t const elem) {
     CHECK_RETURN;
 }
 
-int StackPop(stack_t *const stk) {
+int StackPop_(stack_t *const stk, char const *const filename, size_t const line) {
     CHECK_RETURN 0;
 
     RETURN_ERROR_IF(stk->size == 0, POP_NO_ITEMS) 0;
 
     if (stk->size <= stk->capacity/4 && stk->capacity != MIN_STACK_CAPACITY) {
         if (stk->capacity / 2 < MIN_STACK_CAPACITY)
-            ResizeStack(stk, MIN_STACK_CAPACITY);
+            ResizeStack(stk, MIN_STACK_CAPACITY, filename, line);
         else
-            ResizeStack(stk, stk->capacity/2);
+            ResizeStack(stk, stk->capacity/2, filename, line);
     }
 
     stk->size--;
@@ -263,7 +260,7 @@ int StackPop(stack_t *const stk) {
     return value;
 }
 
-void StackFinalize(stack_t *const stk) {
+void StackFinalize_(stack_t *const stk, char const *const filename, size_t const line) {
     RETURN_ERROR_IF(stk == NULL, IS_NULL);
 
 #ifndef NDEBUG

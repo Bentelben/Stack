@@ -26,7 +26,6 @@ void FPrintStackElement(FILE *file, stack_elem_t value) {
 
 
 
-
 typedef uint16_t stack_error_t;
 
 enum stack_error_offset_t {
@@ -54,15 +53,19 @@ struct stack_t {
 };
 
 
-#define StackDump(logfile, stk) _stackDump(logfile, stk, __FILE__, __LINE__)
-void _stackDump(FILE *file, stack_t const *stk, char const *filename, size_t line);
+#define StackDump(logfile, stk) StackDump_(logfile, stk, __FILE__, __LINE__)
+void StackDump_(FILE *file, stack_t const *stk, char const *filename, size_t line);
 
-void StackInitialize(stack_t *stk);
+#define StackInitialize(stk) StackInitialize_(stk, __FILE__, __LINE__)
+void StackInitialize_(stack_t *stk, char const *filename, size_t line);
 
-void StackPush(stack_t *stk, stack_elem_t elem);
+#define StackPush(stk, elem) StackPush_(stk, elem, __FILE__, __LINE__)
+void StackPush_(stack_t *stk, stack_elem_t elem, char const *filename, size_t line);
 
-stack_elem_t StackPop(stack_t *stk);
+#define StackPop(stk) StackPop_(stk, __FILE__, __LINE__)
+stack_elem_t StackPop_(stack_t *stk, char const *filename, size_t line);
 
-void StackFinalize(stack_t *stk);
+#define StackFinalize(stk) StackFinalize_(stk, __FILE__, __LINE__)
+void StackFinalize_(stack_t *stk, char const *filename, size_t line);
 
 #endif
