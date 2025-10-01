@@ -1,8 +1,24 @@
+#define STACK_CPP
 #include "stack.h"
+#undef STACK_CPP
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+
+static void SetKanareyka(stack_elem_t *const dest) {
+    unsigned char *const dest_uc = (unsigned char *)dest;
+    for (size_t i = 0; i < sizeof(stack_elem_t); i++)
+        dest_uc[i] = KANAREYKA_STACK_VALUE;
+}
+
+static bool IsKanareyka(stack_elem_t const *const dest) {
+    unsigned char const *const dest_uc = (unsigned char const *)dest;
+    for (size_t i = 0; i < sizeof(stack_elem_t); i++)
+        if (dest_uc[i] != KANAREYKA_STACK_VALUE)
+            return false;
+    return true;
+}
 
 #define TRUE_BIT ((stack_error_t)1)
 
@@ -44,8 +60,8 @@
 
         if (
             stk->capacity > MAX_STACK_CAPACITY ||
-            stk->data[-1] != KANAREYKA_STACK_VALUE ||
-            stk->data[stk->capacity] != KANAREYKA_STACK_VALUE
+            !IsKanareyka(stk->data - 1) ||
+            !IsKanareyka(stk->data + stk->capacity)
         )
             ADD_ERROR(KANAREYKA_DAMAGED)
 
@@ -72,14 +88,14 @@ static void ResizeStack(stack_t *const stk, size_t const new_capacity) {
     if (stk->data != NULL)
         stk->data = stk->data - 1;
 
-    int *new_data = (int *)realloc(stk->data, (1 + new_capacity + 1)*sizeof(*stk->data));
+    stack_elem_t *new_data = (stack_elem_t *)realloc(stk->data, (1 + new_capacity + 1)*sizeof(*stk->data));
     RETURN_ERROR_IF(new_data == NULL, ALLOCATION);
 
     new_data = new_data + 1;
 
     if (stk->data == NULL)
-        new_data[-1] = KANAREYKA_STACK_VALUE;
-    new_data[new_capacity] = KANAREYKA_STACK_VALUE;
+        SetKanareyka(new_data - 1);
+    SetKanareyka(new_data + new_capacity);
 
 #ifndef NDEBUG
     if (new_capacity > stk->capacity)
@@ -176,7 +192,8 @@ void _stackDump(FILE *file, stack_t const *const stk, char const *const filename
                 else
                     fprintf(file, " ");
         
-                fprintf(file, "[%zu] = %d", i, stk->data[i]);
+                fprintf(file, "[%zu] = ", i);
+                FPrintStackElement(file, stk->data[i]);
         
                 if (i >= stk->size && stk->data[i] == POISON_STACK_VALUE)
                     fprintf(file, " (POISON)");
@@ -205,7 +222,7 @@ void StackInitialize(stack_t *const stk) {
     CHECK_RETURN;
 }
 
-void StackPush(stack_t *const stk, int const elem) {
+void StackPush(stack_t *const stk, stack_elem_t const elem) {
     CHECK_RETURN;
 
     if (stk->size == stk->capacity) {

@@ -2,16 +2,35 @@
 #define STACK_H
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
 
-const size_t INIT_STACK_CAPACITY = 16;
-const size_t MIN_STACK_CAPACITY = 8;
-const size_t MAX_STACK_CAPACITY = SIZE_MAX - 2;
 
-const int POISON_STACK_VALUE = -1189;
-const int KANAREYKA_STACK_VALUE = 0xEDAA; // TODO fix size uint64
-// TODO char kanareyka value filling int
+// Element settings
+typedef int stack_elem_t;
+const stack_elem_t POISON_STACK_VALUE = -1189;
+
+// Capacity settings
+const size_t INIT_STACK_CAPACITY = 16;
+const size_t MAX_STACK_CAPACITY = SIZE_MAX - 2;
+const size_t MIN_STACK_CAPACITY = 8;
+
+// Kanareyka settings
+const unsigned char KANAREYKA_STACK_VALUE = 0xED;
+
+#ifdef STACK_CPP
+void FPrintStackElement(FILE *file, stack_elem_t value);
+
+void FPrintStackElement(FILE *file, stack_elem_t value) {
+    fprintf(file, "%d", value);
+}
+#endif
+
+
+
+
+
+
+typedef uint32_t stack_error_t;
 
 enum stack_error_offset_t {
     STACK_IS_NULL_ERROR,
@@ -30,10 +49,8 @@ enum stack_error_offset_t {
     STACK_POISON_DAMAGED_ERROR
 };
 
-typedef uint32_t stack_error_t;
-
 struct stack_t {
-    int *data;
+    stack_elem_t *data;
     size_t size;
     size_t capacity;
     stack_error_t error;
@@ -45,9 +62,9 @@ void _stackDump(FILE *file, stack_t const *stk, char const *filename, size_t lin
 
 void StackInitialize(stack_t *stk);
 
-void StackPush(stack_t *stk, int elem);
+void StackPush(stack_t *stk, stack_elem_t elem);
 
-int StackPop(stack_t *stk);
+stack_elem_t StackPop(stack_t *stk);
 
 void StackFinalize(stack_t *stk);
 
