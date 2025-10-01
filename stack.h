@@ -13,9 +13,7 @@ const int POISON_STACK_VALUE = -1189;
 const int KANAREYKA_STACK_VALUE = 0xEDAA; // TODO fix size uint64
 // TODO char kanareyka value filling int
 
-enum stack_error_t {
-    STACK_NO_ERROR = 0,
-
+enum stack_error_offset_t {
     STACK_IS_NULL_ERROR,
     STACK_DATA_IS_NULL_ERROR,
 
@@ -32,11 +30,13 @@ enum stack_error_t {
     STACK_POISON_DAMAGED_ERROR
 };
 
+typedef uint32_t stack_error_t;
+
 struct stack_t {
     int *data;
     size_t size;
     size_t capacity;
-    stack_error_t error; // uint (multiple errors)
+    stack_error_t error;
 };
 
 
