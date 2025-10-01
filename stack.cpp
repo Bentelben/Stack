@@ -1,14 +1,11 @@
 #include "stack.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 
-#ifndef NDEBUG
-    #define CHECK_RETURN if (!StackVerify(stk) && (StackDump(stderr, stk), 1)) return
-#else
-    #define CHECK_RETURN
-#endif
-
 #define TRUE_BIT ((stack_error_t)1)
+
 #define GET_ERROR_CODE(error_name) (STACK_ ## error_name ## _ERROR)
 
 #define ADD_ERROR(error_name) \
@@ -25,37 +22,44 @@
     }                                      \
     if (value) return
 
+
 #ifndef NDEBUG
-static bool StackVerify(stack_t *const stk) {
-    if (stk == NULL)
-        return false;
 
-    // Reset temporary errors
-    SET_ERROR(ALLOCATION, 0);
-    SET_ERROR(POP_NO_ITEMS, 0);
-    SET_ERROR(PUSH_MAX_CAPACITY_SIZE, 0);
+    #define CHECK_RETURN if (!StackVerify(stk) && (StackDump(stderr, stk), 1)) return
 
-    SET_ERROR(DATA_IS_NULL, stk->data == NULL)
+    static bool StackVerify(stack_t *const stk) {
+        if (stk == NULL)
+            return false;
 
-    SET_ERROR(CAPACITY_LESS_SIZE, stk->size > stk->capacity)
-    SET_ERROR(CAPACITY_LESS_MIN_CAPACITY, stk->capacity < MIN_STACK_CAPACITY)
-    SET_ERROR(CAPACITY_BIGGER_MAX_CAPACITY, stk->capacity > MAX_STACK_CAPACITY)
+        // Reset temporary errors
+        SET_ERROR(ALLOCATION, 0);
+        SET_ERROR(POP_NO_ITEMS, 0);
+        SET_ERROR(PUSH_MAX_CAPACITY_SIZE, 0);
 
-    if (
-        stk->capacity > MAX_STACK_CAPACITY ||
-        stk->data[-1] != KANAREYKA_STACK_VALUE ||
-        stk->data[stk->capacity] != KANAREYKA_STACK_VALUE
-    )
-        ADD_ERROR(KANAREYKA_DAMAGED)
+        SET_ERROR(DATA_IS_NULL, stk->data == NULL)
 
-    for (size_t i = stk->size; i < stk->capacity; i++)
-        if (stk->data[i] != POISON_STACK_VALUE) {
-            ADD_ERROR(POISON_DAMAGED);
-            break;
-        }
-    
-    return stk->error == 0;
-}
+        SET_ERROR(CAPACITY_LESS_SIZE, stk->size > stk->capacity)
+        SET_ERROR(CAPACITY_LESS_MIN_CAPACITY, stk->capacity < MIN_STACK_CAPACITY)
+        SET_ERROR(CAPACITY_BIGGER_MAX_CAPACITY, stk->capacity > MAX_STACK_CAPACITY)
+
+        if (
+            stk->capacity > MAX_STACK_CAPACITY ||
+            stk->data[-1] != KANAREYKA_STACK_VALUE ||
+            stk->data[stk->capacity] != KANAREYKA_STACK_VALUE
+        )
+            ADD_ERROR(KANAREYKA_DAMAGED)
+
+        for (size_t i = stk->size; i < stk->capacity; i++)
+            if (stk->data[i] != POISON_STACK_VALUE) {
+                ADD_ERROR(POISON_DAMAGED);
+                break;
+            }
+        
+        return stk->error == 0;
+    }
+
+#else
+    #define CHECK_RETURN
 #endif
 
 
