@@ -19,7 +19,8 @@ processor.out : $(processor_sources:%=$(BUILD_DIR)/processor/%.o)
 compiler.out : $(compiler_sources:%=$(BUILD_DIR)/compiler/%.o)
 	$(COMPILER) $(COMPILER_FLAGS) $^ -o $@
 
--include $(source_files:%=$(BUILD_DIR)/%.d)
+-include $(processor_sources:%=$(BUILD_DIR)/processor/%.d)
+-include $(compiler_sources:%=$(BUILD_DIR)/compiler/%.d)
 
 $(BUILD_DIR)/%.o : %.cpp
 	mkdir -p $(@D)
