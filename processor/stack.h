@@ -25,7 +25,6 @@ void FPrintStackElement(FILE *file, stack_elem_t value) {
 #endif
 
 
-
 typedef uint16_t stack_error_t;
 
 enum stack_error_offset_t {

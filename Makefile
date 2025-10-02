@@ -4,23 +4,28 @@ DED_FLAGS := -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive
 
 COMPILER_FLAGS := $(DED_FLAGS) $(MY_FLAGS)
 
-OUT := a.out
-MAIN := main
 BUILD_DIR := build
 
-source_files := $(MAIN) stack
+processor_sources := main stack
+compiler_sources := main parser text_utils
 
-$(OUT): $(source_files:%=$(BUILD_DIR)/%.o)
+.PHONY: build clean
+
+build : compiler.out processor.out
+
+processor.out : $(processor_sources:%=$(BUILD_DIR)/processor/%.o)
+	$(COMPILER) $(COMPILER_FLAGS) $^ -o $@
+	
+compiler.out : $(compiler_sources:%=$(BUILD_DIR)/compiler/%.o)
 	$(COMPILER) $(COMPILER_FLAGS) $^ -o $@
 
 -include $(source_files:%=$(BUILD_DIR)/%.d)
 
-$(BUILD_DIR)/%.o: %.cpp
+$(BUILD_DIR)/%.o : %.cpp
 	mkdir -p $(@D)
 	$(COMPILER) $(COMPILER_FLAGS) -MP -MMD $< -c -o $@
 
-.PHONY: clean
 
-clean:
+clean :
 	-rm -r $(BUILD_DIR)
-	-rm $(OUT)
+	-rm *.out
