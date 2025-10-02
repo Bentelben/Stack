@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "instructions.h"
+#include "../instructions.h"
 #include "text_utils.h"
 #include "parser.h"
 
@@ -16,11 +16,7 @@ enum compiler_error_t {
     COMPILER_TOO_FEW_ARGUMENTS_ERROR
 };
 
-static void WriteInstruction(FILE *const file, instruction_t const *const instruction) {
-    fprintf(file, "%zu ", instruction->code);
-}
-
-static void WriteArgument(FILE *const file, int const value) {
+static void WriteData(FILE *const file, int const value) {
     fprintf(file, "%d ", value);
 }
 
@@ -28,7 +24,7 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
     assert(file);
     assert(line);
 
-    instruction_t const *instruction = NULL;
+    size_t instruction = 0;
     parser_error_t error = ParseToken(line, InstructionParserFunction, &instruction);
     switch (error) {
         case PARSER_TOO_LONG_TOKEN_ERROR:
@@ -44,11 +40,10 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
             return COMPILER_INVALID_COMMAND_ERROR;
     }
 
-    assert(instruction);
-    WriteInstruction(file, instruction);
+    WriteData(file, instruction);
     
     size_t i = 0;
-    for (; i < instruction->argument_count; i++) {
+    for (; i < INSTRUCTIONS[instruction].argument_count; i++) {
         int value = 0;
         error = ParseToken(line, IntegerParserFunction, &value);
         switch (error) {
@@ -65,7 +60,7 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
                 return COMPILER_INVALID_ARGUMENT_ERROR;
         }
 
-        WriteArgument(file, value);
+        WriteData(file, value);
     }
 
     if (CanParseNextToken(line))

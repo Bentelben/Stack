@@ -1,6 +1,6 @@
 #include "parser.h"
 
-#include "instructions.h"
+#include "../instructions.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,11 +62,12 @@ static instruction_t const *GetInstruction(char const *const instruction_name) {
 }
 
 int InstructionParserFunction(char const str[], size_t str_length, void *const result) {
-    *((instruction_t const **)result) = GetInstruction(str);
+    instruction_t const *instruction = GetInstruction(str);
     
-    if (*(instruction_t const **)result == NULL)
+    if (instruction == NULL)
         return -1;
     
+    *(size_t *)result = (size_t)(instruction - INSTRUCTIONS);
     return (int)str_length;
 }
 
