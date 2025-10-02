@@ -67,10 +67,9 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
 
         WriteArgument(file, value);
     }
-    
-    int tmp = 0;
-    if (ParseToken(line, IntegerParserFunction, &tmp) != PARSER_EOF_ERROR)
-        return COMPILER_TOO_FEW_ARGUMENTS_ERROR;
+
+    if (CanParseNextToken(line))
+        return COMPILER_TOO_MANY_ARGUMENTS_ERROR;
     
     return COMPILER_NO_ERROR;
 }
@@ -94,7 +93,7 @@ static void HandleCompilerError(compiler_error_t const error, char const *const 
     printf("> %s\n  ", line.str);
     for (size_t i = 0; i < (size_t)(compile_progress - line.str); i++)
         printf(" ");
-    printf("^\n\n");
+    printf("^\n");
 
     switch (error) {
         case COMPILER_TOO_LONG_TOKEN_ERROR:

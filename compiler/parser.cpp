@@ -10,6 +10,12 @@
 #define STR2_(x) STR1_(x)
 #define TOKEN_SPEC "%" STR2_(MAX_TOKEN_LENGTH) "s"
 
+bool CanParseNextToken(char **const line) {
+    char buffer[MAX_TOKEN_LENGTH + 1] = "";
+    int scanf_result = sscanf(*line, TOKEN_SPEC, buffer);
+    return scanf_result == 1;
+}
+
 static bool IsTokenSeparator(char c) {
     return c == ' ';
 }
@@ -18,7 +24,7 @@ parser_error_t ParseToken(char **const line, parser_function_t const func, void 
     char buffer[MAX_TOKEN_LENGTH + 1] = "";
 
     int chars_read_count = 0;
-    int scanf_result = sscanf(*line, TOKEN_SPEC "%n", buffer, &chars_read_count);
+    int scanf_result = sscanf(*line, TOKEN_SPEC"%n", buffer, &chars_read_count);
 
     if (scanf_result != 1)
         return PARSER_EOF_ERROR;
@@ -32,6 +38,8 @@ parser_error_t ParseToken(char **const line, parser_function_t const func, void 
     if (token_length != (int)buffer_length)
         return PARSER_INVALID_TOKEN_ERROR;
 
+    *line += chars_read_count;
+    sscanf(*line, " %n ", &chars_read_count);
     *line += chars_read_count;
 
     return PARSER_NO_ERROR;

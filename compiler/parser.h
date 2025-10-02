@@ -15,6 +15,7 @@ enum parser_error_t {
 
 typedef int (*parser_function_t)(char const str[], size_t str_length, void *result);
 
+bool CanParseNextToken(char **const line);
 parser_error_t ParseToken(char **line, parser_function_t func, void *result);
 
 int IntegerParserFunction(char const str[], size_t str_length, void *result);
