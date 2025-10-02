@@ -1,10 +1,10 @@
 #include "parser.h"
 
+#include "instructions.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "../instructions.h"
 
 #define STR1_(x) #x
 #define STR2_(x) STR1_(x)

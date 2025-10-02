@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../instructions.h"
+#include "instructions.h"
 #include "text_utils.h"
 #include "parser.h"
 
@@ -120,6 +120,7 @@ static void HandleCompilerError(compiler_error_t const error, char const *const 
 }
 
 int main() {
+    // TODO command line arguments
     char const *const input_filename = "code.asm";
     char const *const output_filename = "bytecode.txt";
 
