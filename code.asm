@@ -1,3 +1,5 @@
-PUSH            1124         
-   PUSH   14
+PUSH 40
+PUSH 20
+DIV
+OUT
 HLT

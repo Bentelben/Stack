@@ -4,9 +4,9 @@
 static char const COMMENT_SYMBOL = ';';
 
 #ifdef PROCESSOR
-    #include "executor.h"
-    #include "stack.h"
-    typedef int (*executor_function_t)(code_reader_t *, *stk)
+    #include "byteio.h"
+    #include "processor/stack.h"
+    typedef int (*executor_function_t)(reader_t *, stack_t *);
 #endif
 
 struct instruction_t {
@@ -18,7 +18,7 @@ struct instruction_t {
 };
 
 #ifdef PROCESSOR
-    #define EXECUTOR(function_name) , function_name
+    #define EXECUTOR(function_name) , Run ## function_name
 #else
     #define EXECUTOR(function_name)
 #endif

@@ -3,7 +3,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "../byteio.h"
 #include "../instructions.h"
+
 #include "text_utils.h"
 #include "parser.h"
 
@@ -16,12 +18,8 @@ enum compiler_error_t {
     COMPILER_TOO_FEW_ARGUMENTS_ERROR
 };
 
-static void WriteData(FILE *const file, int const value) {
-    fprintf(file, "%d ", value);
-}
-
-static compiler_error_t TranslateLine(FILE *const file, char **line) {
-    assert(file);
+static compiler_error_t TranslateLine(writer_t *const writer, char **line) {
+    assert(writer);
     assert(line);
 
     size_t instruction = 0;
@@ -40,7 +38,7 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
             return COMPILER_INVALID_COMMAND_ERROR;
     }
 
-    WriteData(file, instruction);
+    WriteElement(writer, &instruction, 1); // FIXME cast to char
     
     size_t i = 0;
     for (; i < INSTRUCTIONS[instruction].argument_count; i++) {
@@ -60,7 +58,7 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
                 return COMPILER_INVALID_ARGUMENT_ERROR;
         }
 
-        WriteData(file, value);
+        WriteElement(writer, &value, sizeof(int));
     }
 
     if (CanParseNextToken(line))
@@ -69,15 +67,14 @@ static compiler_error_t TranslateLine(FILE *const file, char **line) {
     return COMPILER_NO_ERROR;
 }
 
-static char *CompileLine(FILE *file, line_t line, compiler_error_t *const error) {
+static char *CompileLine(writer_t *const writer, line_t line, compiler_error_t *const error) {
     line.str[line.length] = '\0';
 
     char *comment_symbol_ptr = strchr(line.str, COMMENT_SYMBOL);
     if (comment_symbol_ptr != NULL)
         *comment_symbol_ptr = '\0';
-
     
-    *error = TranslateLine(file, &line.str);
+    *error = TranslateLine(writer, &line.str);
 
     return line.str;
 }
@@ -118,9 +115,9 @@ int main() {
     // TODO command line arguments
     char const *const input_filename = "code.asm";
     char const *const output_filename = "bytecode.txt";
-
-    FILE *output_file = fopen(output_filename, "w");
-    if (output_file == NULL) {
+    
+    writer_t writer = {};
+    if (InitializeWriter(&writer, output_filename) == -1) {
         printf("Unable open file `%s` for writing\n", output_filename);
         return -1;
     }
@@ -128,7 +125,7 @@ int main() {
     char *const text = ReadFile(input_filename);
     if (text == NULL) {
         printf("Unable to read file `%s`\n", input_filename);
-        fclose(output_file);
+        FinalizeWriter(&writer);
         return -1;
     }
 
@@ -136,27 +133,31 @@ int main() {
     line_t *const lines = GetLineArray(text, &line_count);
     if (lines == NULL) {
         printf("Internal compiler error occured while creating line array\n");
-        fclose(output_file);
+        FinalizeWriter(&writer);
         free(text);
         return -1;
     }
 
+    
     size_t i = 0;
     char *compile_progress = NULL;
     compiler_error_t error = COMPILER_NO_ERROR;
     for (; i < line_count; i++) {
-        compile_progress = CompileLine(output_file, lines[i], &error);
+        compile_progress = CompileLine(&writer, lines[i], &error);
         if (error != COMPILER_NO_ERROR)
             break;
     }
 
     if (error != COMPILER_NO_ERROR) {
         HandleCompilerError(error, input_filename, i, lines[i], compile_progress);
-        fclose(output_file);
-        output_file = fopen(output_filename, "w");
+        FinalizeWriter(&writer);
+        free(text);
+        free(lines);
+        fclose(fopen(output_filename, "w"));
+        return -1;
     }
     
-    fclose(output_file);
+    FinalizeWriter(&writer);
     free(text);
     free(lines);
 
