@@ -40,6 +40,6 @@ static const instruction_t INSTRUCTIONS[] = {
 #undef INSTRUCTION
 #undef EXECUTOR
 
-static size_t const INSTRUCTION_COUNT = sizeof(INSTRUCTIONS)/sizeof(*INSTRUCTIONS);
+static unsigned char const INSTRUCTION_COUNT = (unsigned char)(sizeof(INSTRUCTIONS)/sizeof(*INSTRUCTIONS));
 
 #endif

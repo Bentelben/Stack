@@ -22,7 +22,7 @@ static compiler_error_t TranslateLine(writer_t *const writer, char **line) {
     assert(writer);
     assert(line);
 
-    size_t instruction = 0;
+    unsigned char instruction = 0;
     parser_error_t error = ParseToken(line, InstructionParserFunction, &instruction);
     switch (error) {
         case PARSER_TOO_LONG_TOKEN_ERROR:
@@ -38,7 +38,7 @@ static compiler_error_t TranslateLine(writer_t *const writer, char **line) {
             return COMPILER_INVALID_COMMAND_ERROR;
     }
 
-    WriteElement(writer, &instruction, 1); // FIXME cast to char
+    WriteElement(writer, &instruction, 1);
     
     size_t i = 0;
     for (; i < INSTRUCTIONS[instruction].argument_count; i++) {

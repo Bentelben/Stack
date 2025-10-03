@@ -67,7 +67,7 @@ int InstructionParserFunction(char const str[], size_t str_length, void *const r
     if (instruction == NULL)
         return -1;
     
-    *(size_t *)result = (size_t)(instruction - INSTRUCTIONS);
+    *(unsigned char *)result = (unsigned char)(instruction - INSTRUCTIONS);
     return (int)str_length;
 }
 
