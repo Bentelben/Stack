@@ -8,21 +8,21 @@ BUILD_DIR := build
 
 libs := byteio
 processor_sources := main stack executor
-compiler_sources := main parser text_utils
+assembler_sources := main parser text_utils
 
 .PHONY: build clean
 
-build : compiler.out processor.out
+build : assembler.out processor.out
 
 processor.out : $(processor_sources:%=$(BUILD_DIR)/processor/%.o) $(libs:%=$(BUILD_DIR)/%.o)
 	$(COMPILER) $(COMPILER_FLAGS) $^ -o $@
 	
-compiler.out : $(compiler_sources:%=$(BUILD_DIR)/compiler/%.o) $(libs:%=$(BUILD_DIR)/%.o)
+assembler.out : $(assembler_sources:%=$(BUILD_DIR)/assembler/%.o) $(libs:%=$(BUILD_DIR)/%.o)
 	$(COMPILER) $(COMPILER_FLAGS) $^ -o $@
 
 -include $(libs:%=$(BUILD_DIR)/%.d)
 -include $(processor_sources:%=$(BUILD_DIR)/processor/%.d)
--include $(compiler_sources:%=$(BUILD_DIR)/compiler/%.d)
+-include $(assembler_sources:%=$(BUILD_DIR)/assembler/%.d)
 
 $(BUILD_DIR)/%.o : %.cpp
 	mkdir -p $(@D)
