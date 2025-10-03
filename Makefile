@@ -7,7 +7,7 @@ COMPILER_FLAGS := $(DED_FLAGS) $(MY_FLAGS)
 BUILD_DIR := build
 
 libs := byteio
-processor_sources := main stack executor
+processor_sources := main stack processor
 assembler_sources := main parser text_utils translator
 
 .PHONY: build clean

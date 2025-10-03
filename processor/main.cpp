@@ -1,7 +1,7 @@
 #include "../byteio.h"
 
 #include "stack.h"
-#include "executor.h"
+#include "processor.h"
 
 #include <math.h>
 #include <stdio.h>
