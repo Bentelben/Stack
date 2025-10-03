@@ -28,11 +28,13 @@ struct instruction_t {
 static const instruction_t INSTRUCTIONS[] = {
     INSTRUCTION(HLT,  0),
     INSTRUCTION(PUSH, 1),
+    INSTRUCTION(OUT,  0),
     INSTRUCTION(ADD,  0),
     INSTRUCTION(SUB,  0),
     INSTRUCTION(MUL,  0),
     INSTRUCTION(DIV,  0),
-    INSTRUCTION(OUT,  0)
+
+    INSTRUCTION(SQRT,  0)
 };
 
 #undef INSTRUCTION

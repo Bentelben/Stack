@@ -1,6 +1,8 @@
 #include "executor.h"
 #include "stack.h"
 
+#include <math.h>
+
 #define PROCESSOR
 #include "../instructions.h"
 #undef PROCESSOR
@@ -67,4 +69,16 @@ OPERATOR(MUL, *)
 OPERATOR(DIV, /) // TODO zero division check
 
 #undef OPERATOR
+
+int RunSQRT(reader_t *reader, stack_t *stk) {
+    (void)reader;
+    int x = StackPop(stk);
+    RETURN_IF_ERROR();
+    // TODO check x less zero
+    StackPush(stk, (int)sqrt(x));
+    RETURN_IF_ERROR();
+    return 0;
+}
+
 #undef RETURN_IF_ERROR
+

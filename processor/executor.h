@@ -10,11 +10,13 @@ int ExecuteInstruction(reader_t *reader, stack_t *stk);
 
 DECLARE(HLT);
 DECLARE(PUSH);
+DECLARE(OUT);
 DECLARE(ADD);
 DECLARE(SUB);
 DECLARE(MUL);
 DECLARE(DIV);
-DECLARE(OUT);
+
+DECLARE(SQRT);
 
 #undef DECLARE
 
