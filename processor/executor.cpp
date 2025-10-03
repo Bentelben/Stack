@@ -66,7 +66,7 @@ int Run ## name (reader_t *reader, stack_t *stk) { \
 OPERATOR(ADD, +)
 OPERATOR(SUB, -)
 OPERATOR(MUL, *)
-OPERATOR(DIV, /) // TODO zero division check
+OPERATOR(DIV, /, if (b == 0) return -1; )
 
 #undef OPERATOR
 
@@ -74,11 +74,13 @@ int RunSQRT(reader_t *reader, stack_t *stk) {
     (void)reader;
     int x = StackPop(stk);
     RETURN_IF_ERROR();
-    // TODO check x less zero
+
+    if (x < 0)
+        return -1;
+
     StackPush(stk, (int)sqrt(x));
     RETURN_IF_ERROR();
     return 0;
 }
 
 #undef RETURN_IF_ERROR
-
