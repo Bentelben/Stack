@@ -37,8 +37,15 @@ static void HandleExecutorError(executor_error_t const error, stack_t *stk, read
     };
 }
 
-int main() {
-    char const *const filename = "bytecode.txt"; // TODO flags
+int main(int argc, char *argv[]) {
+    if (argc == 1)
+        printf("Error: no input file\n");
+    if (argc != 2) {
+        printf("Usage: %s <input_file>\n", argv[0]);
+        return -1;
+    }
+
+    char const *const filename = argv[1];
 
     reader_t reader = {};
     if (InitializeReader(&reader, filename) == -1) {

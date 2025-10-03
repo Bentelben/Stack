@@ -42,10 +42,18 @@ static void HandleTranslatorError(translator_error_t const error, char const *co
     }
 }
 
-int main() {
-    // TODO command line arguments
-    char const *const input_filename = "code.asm";
-    char const *const output_filename = "bytecode.txt";
+int main(int argc, char *argv[]) {
+    if (argc == 1)
+        printf("Error: no input file\n");
+    else if (argc == 2)
+        printf("Error: no output file\n");
+    if (argc != 3) {
+        printf("Usage: %s <input_file> <output_file>\n", argv[0]);
+        return -1;
+    }
+
+    char const *const input_filename = argv[1];
+    char const *const output_filename = argv[2];
     
     writer_t writer = {};
     if (InitializeWriter(&writer, output_filename) == -1) {
