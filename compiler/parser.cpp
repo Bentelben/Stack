@@ -16,7 +16,7 @@ bool CanParseNextToken(char **const line) {
     return scanf_result == 1;
 }
 
-static bool IsTokenSeparator(char c) {
+static bool IsTokenSeparator(char const c) {
     return c == ' ';
 }
 
@@ -45,7 +45,7 @@ parser_error_t ParseToken(char **const line, parser_function_t const func, void 
     return PARSER_NO_ERROR;
 }
 
-int IntegerParserFunction(char const str[], size_t str_length, void *const result) {
+int IntegerParserFunction(char const str[], size_t const str_length, void *const result) {
     (void)str_length;
     int result_length = 0;
     int scanf_result = sscanf(str, "%d%n", (int *)result, &result_length);
@@ -61,7 +61,7 @@ static instruction_t const *GetInstruction(char const *const instruction_name) {
     return NULL;
 }
 
-int InstructionParserFunction(char const str[], size_t str_length, void *const result) {
+int InstructionParserFunction(char const str[], size_t const str_length, void *const result) {
     instruction_t const *instruction = GetInstruction(str);
     
     if (instruction == NULL)

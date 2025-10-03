@@ -9,7 +9,7 @@
 #include <assert.h>
 
 int main() {
-    char const *filename = "bytecode.txt";
+    char const *const filename = "bytecode.txt";
 
     reader_t reader = {};
     if (InitializeReader(&reader, filename) == -1) {

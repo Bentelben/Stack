@@ -18,7 +18,7 @@ enum compiler_error_t {
     COMPILER_TOO_FEW_ARGUMENTS_ERROR
 };
 
-static compiler_error_t TranslateLine(writer_t *const writer, char **line) {
+static compiler_error_t TranslateLine(writer_t *const writer, char **const line) {
     assert(writer);
     assert(line);
 

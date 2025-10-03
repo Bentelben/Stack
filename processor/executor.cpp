@@ -7,7 +7,7 @@
 #include "../instructions.h"
 #undef PROCESSOR
 
-int ExecuteInstruction(reader_t *reader, stack_t *stk) {
+int ExecuteInstruction(reader_t *const reader, stack_t *const stk) {
     unsigned char instruction = 0;
 
     if (ReadElement(reader, &instruction, sizeof(instruction)) == -1)
@@ -28,7 +28,7 @@ int RunHLT(reader_t *reader, stack_t *stk) {
 
 #define RETURN_IF_ERROR() if (stk->error != 0) return -1
 
-int RunPUSH(reader_t *reader, stack_t *stk) {
+int RunPUSH(reader_t *const reader, stack_t *const stk) {
     int value = 0;
     
     if (ReadElement(reader, &value, sizeof(value)) == -1)
@@ -41,7 +41,7 @@ int RunPUSH(reader_t *reader, stack_t *stk) {
     return 0;
 }
 
-int RunOUT(reader_t *reader, stack_t *stk) {
+int RunOUT(reader_t *const reader, stack_t *const stk) {
     (void)reader;
 
     int value = StackPop(stk);
@@ -50,17 +50,17 @@ int RunOUT(reader_t *reader, stack_t *stk) {
     return 0;
 }
 
-#define OPERATOR(name, symbol, ...)                \
-int Run ## name (reader_t *reader, stack_t *stk) { \
-    (void)reader;                                  \
-    int b = StackPop(stk);                         \
-    RETURN_IF_ERROR();                             \
-    int a = StackPop(stk);                         \
-    RETURN_IF_ERROR();                             \
-    __VA_ARGS__                                    \
-    StackPush(stk, a symbol b);                    \
-    RETURN_IF_ERROR();                             \
-    return 0;                                      \
+#define OPERATOR(name, symbol, ...)                            \
+int Run ## name (reader_t *const reader, stack_t *const stk) { \
+    (void)reader;                                              \
+    int b = StackPop(stk);                                     \
+    RETURN_IF_ERROR();                                         \
+    int a = StackPop(stk);                                     \
+    RETURN_IF_ERROR();                                         \
+    __VA_ARGS__                                                \
+    StackPush(stk, a symbol b);                                \
+    RETURN_IF_ERROR();                                         \
+    return 0;                                                  \
 }
 
 OPERATOR(ADD, +)
@@ -70,7 +70,7 @@ OPERATOR(DIV, /, if (b == 0) return -1; )
 
 #undef OPERATOR
 
-int RunSQRT(reader_t *reader, stack_t *stk) {
+int RunSQRT(reader_t *const reader, stack_t *const stk) {
     (void)reader;
     int x = StackPop(stk);
     RETURN_IF_ERROR();

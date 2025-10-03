@@ -4,14 +4,14 @@
 #include <sys/stat.h>
 #include <string.h>
 
-static size_t GetFileSize(char const *filename) {
+static size_t GetFileSize(char const *const filename) {
     struct stat file_stat = {};
     if (stat(filename, &file_stat) == -1)
         return 0;
     return (size_t)file_stat.st_size;
 }
 
-int InitializeReader(reader_t *reader, char const *filename) {
+int InitializeReader(reader_t *reader, char const *const filename) {
     assert(reader);
 
     size_t file_size = GetFileSize(filename);
@@ -43,11 +43,11 @@ int InitializeReader(reader_t *reader, char const *filename) {
     return 0;
 }
 
-bool CanRead(reader_t *reader) {
+bool CanRead(reader_t *const reader) {
     return reader->index < reader->size;
 }
 
-int ReadElement(reader_t *reader, void *pointer, size_t size) {
+int ReadElement(reader_t *reader, void *const pointer, size_t const size) {
     assert(reader);
 
     if (reader->index + size - 1 >= reader->size)
@@ -59,14 +59,14 @@ int ReadElement(reader_t *reader, void *pointer, size_t size) {
     return 0;
 }
 
-void FinalizeReader(reader_t *reader) {
+void FinalizeReader(reader_t *const reader) {
     assert(reader);
 
     free(reader->array);
 }
 
 
-int InitializeWriter(writer_t *writer, char const *filename) {
+int InitializeWriter(writer_t *const writer, char const *const filename) {
     assert(writer);
 
     writer->file = fopen(filename, "wb");
@@ -83,7 +83,7 @@ int InitializeWriter(writer_t *writer, char const *filename) {
     return 0;
 }
 
-int WriterFlush(writer_t *writer) {
+int WriterFlush(writer_t *const writer) {
     assert(writer);
 
     for (size_t i = 0; i < writer->index; i++) {
@@ -101,7 +101,7 @@ int WriterFlush(writer_t *writer) {
     return 0;
 }
 
-int WriteElement(writer_t *writer, void *pointer, size_t size) {
+int WriteElement(writer_t *const writer, void *const pointer, size_t const size) {
     assert(writer);
 
     if (size > WRITER_BUFFER_SIZE)
@@ -116,7 +116,7 @@ int WriteElement(writer_t *writer, void *pointer, size_t size) {
     return 0;
 }
 
-void FinalizeWriter(writer_t *writer) {
+void FinalizeWriter(writer_t *const writer) {
     assert(writer);
 
     WriterFlush(writer);
