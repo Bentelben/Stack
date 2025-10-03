@@ -80,7 +80,7 @@ static char *CompileLine(writer_t *const writer, line_t line, compiler_error_t *
 }
 
 static void HandleCompilerError(compiler_error_t const error, char const *const source_filename, size_t line_index, line_t const line, char const *const compile_progress) {
-    printf("Error while compilation occured!\n");
+    printf("Error occured while compilation process!\n");
     printf("In source file `%s:%zu`\n\n", source_filename, line_index + 1);
     printf("> %s\n  ", line.str);
     for (size_t i = 0; i < (size_t)(compile_progress - line.str); i++)

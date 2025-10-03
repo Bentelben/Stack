@@ -5,8 +5,9 @@ static char const COMMENT_SYMBOL = ';';
 
 #ifdef PROCESSOR
     #include "byteio.h"
+    #include "processor/executor.h"
     #include "processor/stack.h"
-    typedef int (*executor_function_t)(reader_t *, stack_t *);
+    typedef executor_error_t (*executor_function_t)(reader_t *, stack_t *);
 #endif
 
 struct instruction_t {

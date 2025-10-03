@@ -110,7 +110,7 @@ static void ResizeStack(stack_t *const stk, size_t const new_capacity, char cons
             fprintf(file, #error_name "_ERROR"); \
             break;
 
-static void FPrintStackError(FILE *const file, stack_error_t error) {
+void FPrintStackError(FILE *const file, stack_error_t error) {
     assert(file);
 
     if (error == 0) {

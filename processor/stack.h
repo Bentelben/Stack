@@ -52,6 +52,8 @@ struct stack_t {
 };
 
 
+void FPrintStackError(FILE *const file, stack_error_t error);
+
 #define StackDump(logfile, stk) StackDump_(logfile, stk, __FILE__, __LINE__)
 void StackDump_(FILE *file, stack_t const *stk, char const *filename, size_t line);
 
