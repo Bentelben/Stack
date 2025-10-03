@@ -8,7 +8,7 @@ BUILD_DIR := build
 
 libs := byteio
 processor_sources := main stack executor
-assembler_sources := main parser text_utils
+assembler_sources := main parser text_utils translator
 
 .PHONY: build clean
 

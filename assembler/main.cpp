@@ -4,107 +4,38 @@
 #include <assert.h>
 
 #include "../byteio.h"
-#include "../instructions.h"
 
 #include "text_utils.h"
 #include "parser.h"
+#include "translator.h"
 
-enum compiler_error_t {
-    COMPILER_NO_ERROR = 0,
-    COMPILER_TOO_LONG_TOKEN_ERROR,
-    COMPILER_INVALID_COMMAND_ERROR,
-    COMPILER_INVALID_ARGUMENT_ERROR,
-    COMPILER_TOO_MANY_ARGUMENTS_ERROR,
-    COMPILER_TOO_FEW_ARGUMENTS_ERROR
-};
 
-static compiler_error_t TranslateLine(writer_t *const writer, char **const line) {
-    assert(writer);
-    assert(line);
-
-    unsigned char instruction = 0;
-    parser_error_t error = ParseToken(line, InstructionParserFunction, &instruction);
-    switch (error) {
-        case PARSER_TOO_LONG_TOKEN_ERROR:
-            return COMPILER_TOO_LONG_TOKEN_ERROR;
-        case PARSER_INVALID_TOKEN_ERROR:
-            return COMPILER_INVALID_COMMAND_ERROR;
-        case PARSER_EOF_ERROR:
-            return COMPILER_NO_ERROR;
-        case PARSER_NO_ERROR:
-            break;
-        default:
-            assert(0);
-            return COMPILER_INVALID_COMMAND_ERROR;
-    }
-
-    WriteElement(writer, &instruction, 1);
-    
-    size_t i = 0;
-    for (; i < INSTRUCTIONS[instruction].argument_count; i++) {
-        int value = 0;
-        error = ParseToken(line, IntegerParserFunction, &value);
-        switch (error) {
-            case PARSER_TOO_LONG_TOKEN_ERROR:
-                return COMPILER_TOO_LONG_TOKEN_ERROR;
-            case PARSER_INVALID_TOKEN_ERROR:
-                return COMPILER_INVALID_ARGUMENT_ERROR;
-            case PARSER_EOF_ERROR:
-                return COMPILER_TOO_FEW_ARGUMENTS_ERROR;
-            case PARSER_NO_ERROR:
-                break;
-            default:
-                assert(0);
-                return COMPILER_INVALID_ARGUMENT_ERROR;
-        }
-
-        WriteElement(writer, &value, sizeof(int));
-    }
-
-    if (CanParseNextToken(line))
-        return COMPILER_TOO_MANY_ARGUMENTS_ERROR;
-    
-    return COMPILER_NO_ERROR;
-}
-
-static char *CompileLine(writer_t *const writer, line_t line, compiler_error_t *const error) {
-    line.str[line.length] = '\0';
-
-    char *comment_symbol_ptr = strchr(line.str, COMMENT_SYMBOL);
-    if (comment_symbol_ptr != NULL)
-        *comment_symbol_ptr = '\0';
-    
-    *error = TranslateLine(writer, &line.str);
-
-    return line.str;
-}
-
-static void HandleCompilerError(compiler_error_t const error, char const *const source_filename, size_t line_index, line_t const line, char const *const compile_progress) {
+static void HandleTranslatorError(translator_error_t const error, char const *const source_filename, line_t const *lines, size_t const text_progress, size_t const line_progress) {
     printf("Error occured while compilation process!\n");
-    printf("In source file `%s:%zu`\n\n", source_filename, line_index + 1);
-    printf("> %s\n  ", line.str);
-    for (size_t i = 0; i < (size_t)(compile_progress - line.str); i++)
+    printf("In source file `%s:%zu`\n\n", source_filename, text_progress + 1);
+    printf("> %s\n  ", lines[text_progress].str);
+    for (size_t i = 0; i < line_progress; i++)
         printf(" ");
     printf("^\n");
 
     switch (error) {
-        case COMPILER_TOO_LONG_TOKEN_ERROR:
+        case TRANSLATOR_TOO_LONG_TOKEN_ERROR:
             printf("Token is too long! Maximum token length is %d\n", MAX_TOKEN_LENGTH);
             break;
-        case COMPILER_INVALID_COMMAND_ERROR:
+        case TRANSLATOR_INVALID_COMMAND_ERROR:
             printf("Invalid command!\n");
             break;
-        case COMPILER_INVALID_ARGUMENT_ERROR:
+        case TRANSLATOR_INVALID_ARGUMENT_ERROR:
             printf("Invalid argument! Argument must be an integer\n");
             break;
-        case COMPILER_TOO_MANY_ARGUMENTS_ERROR:
+        case TRANSLATOR_TOO_MANY_ARGUMENTS_ERROR:
             printf("Too many arguments for this command!\n");
             break;
-        case COMPILER_TOO_FEW_ARGUMENTS_ERROR:
+        case TRANSLATOR_TOO_FEW_ARGUMENTS_ERROR:
             printf("Too few arguments for this command\n");
             break;
 
-        case COMPILER_NO_ERROR:
+        case TRANSLATOR_NO_ERROR:
         default:
             assert(0);
             break;
@@ -137,19 +68,13 @@ int main() {
         free(text);
         return -1;
     }
-
     
-    size_t i = 0;
-    char *compile_progress = NULL;
-    compiler_error_t error = COMPILER_NO_ERROR;
-    for (; i < line_count; i++) {
-        compile_progress = CompileLine(&writer, lines[i], &error);
-        if (error != COMPILER_NO_ERROR)
-            break;
-    }
+    size_t text_progress = 0;
+    size_t line_progress = 0;
+    translator_error_t error = TranslateText(&writer, lines, line_count, &text_progress, &line_progress);
 
-    if (error != COMPILER_NO_ERROR) {
-        HandleCompilerError(error, input_filename, i, lines[i], compile_progress);
+    if (error != TRANSLATOR_NO_ERROR) {
+        HandleTranslatorError(error, input_filename, lines, text_progress, line_progress);
         FinalizeWriter(&writer);
         free(text);
         free(lines);
