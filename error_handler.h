@@ -15,6 +15,7 @@
 
 #define ERROR_BIT_ ((ERROR_TYPE_)1)
 
+// TODO remove skobochka
 #define START_PRINT_ERROR_FUNCTION() \
 static void FPrintError(FILE *const file, const ERROR_SOURCE_TYPE_ ERROR_SOURCE_) { \
     if (ERROR_SOURCE_ == NULL) \

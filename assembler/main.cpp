@@ -3,7 +3,9 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../byteio.h"
+// TODO assembler structure
+
+#include "../byteio/writer.h"
 
 #include "text_utils.h"
 #include "parser.h"
@@ -56,7 +58,8 @@ int main(int argc, char *argv[]) {
     char const *const output_filename = argv[2];
     
     writer_t writer = {};
-    if (WriterInitialize(&writer, output_filename) == -1) {
+    WriterInitialize(&writer, output_filename);
+    if (writer.error != 0) {
         printf("Unable open file `%s` for writing\n", output_filename);
         return -1;
     }

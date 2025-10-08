@@ -2,11 +2,14 @@
 #define PARSER_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
+// TODO realloc maybe
 #define MAX_TOKEN_LENGTH 255
 
-enum parser_error_t {
-    PARSER_NO_ERROR = 0,
+// TODO error handling
+
+enum parser_error_offset_t {
     PARSER_TOO_LONG_TOKEN_ERROR,
     PARSER_EOF_ERROR,
 

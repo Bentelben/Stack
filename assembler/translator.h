@@ -1,7 +1,7 @@
 #ifndef TRANSLATOR_H
 #define TRANSLATOR_H
 
-#include "../byteio.h"
+#include "../byteio/writer.h"
 #include "text_utils.h"
 
 enum translator_error_t {

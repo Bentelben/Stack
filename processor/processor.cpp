@@ -1,6 +1,6 @@
 #include "processor.h"
 
-#include "../byteio.h"
+#include "../byteio/reader.h"
 #include "stack.h"
 
 #include <math.h>
@@ -34,7 +34,8 @@ void ProcessorInitialize(processor_t *processor, char const *filename) {
     ERROR_ASSERT(processor->stack != NULL, PROCESSOR_ALLOCATION_ERROR)
 
     // TODO reader error enum
-    if (ReaderInitialize(processor->reader, filename) != 0)
+    ReaderInitialize(processor->reader, filename);
+    if (processor->reader->error != 0)
         RAISE_ERROR(PROCESSOR_READING_ERROR)
 
     StackInitialize(processor->stack);
@@ -43,8 +44,9 @@ void ProcessorInitialize(processor_t *processor, char const *filename) {
 
 void ExecuteInstruction(processor_t *processor) {
     uint8_t instruction = 0;
-
-    if (ReadElement(processor->reader, &instruction, sizeof(instruction)) == -1)
+    
+    ReadElement(processor->reader, &instruction, sizeof(instruction));
+    if (processor->reader->error != 0)
         RAISE_ERROR(PROCESSOR_READING_ERROR)
 
     if (instruction >= INSTRUCTION_COUNT)
@@ -73,7 +75,9 @@ DECLARE_PROCESSOR_FUNCTION(HLT) {
 
 DECLARE_PROCESSOR_FUNCTION(PUSH) {
     int value = 0;
-    if (ReadElement(processor->reader, &value, sizeof(value)) == -1)
+
+    ReadElement(processor->reader, &value, sizeof(value));
+    if (processor->reader->error != 0)
         RAISE_ERROR(PROCESSOR_READING_ERROR)
 
     StackPush(processor->stack, value);
@@ -125,6 +129,32 @@ DECLARE_PROCESSOR_FUNCTION(SQRT) {
         RAISE_ERROR(PROCESSOR_SQRT_OF_NEGATIVE_ERROR)
 
     StackPush(processor->stack, (int)sqrt(x));
+    RETURN_IF_ERROR;
+    return;
+}
+
+DECLARE_PROCESSOR_FUNCTION(PUSHR) {
+    int register_index = 0;
+
+    ReadElement(processor->reader, &register_index, sizeof(register_index));
+    if (processor->reader->error != 0)
+        RAISE_ERROR(PROCESSOR_READING_ERROR)
+
+    StackPush(processor->stack, processor->registers[register_index]);
+
+    RETURN_IF_ERROR;
+    return;
+}
+
+DECLARE_PROCESSOR_FUNCTION(POPR) {
+    int register_index = 0;
+
+    ReadElement(processor->reader, &register_index, sizeof(register_index));
+    if (processor->reader->error != 0)
+        RAISE_ERROR(PROCESSOR_READING_ERROR)
+
+    StackPop(processor->stack, &processor->registers[register_index]);
+
     RETURN_IF_ERROR;
     return;
 }

@@ -1,8 +1,23 @@
-#include "byteio.h"
+#include "reader.h"
 
+
+#define ERROR_SOURCE_ reader
+#define ERROR_SOURCE_TYPE_ reader_t*
+#define ERROR_TYPE_ reader_error_t
+
+#include "../error_handler.h"
+
+START_PRINT_ERROR_FUNCTION()
+HANDLE_ERROR(READER_ALLOCATION_ERROR)
+HANDLE_ERROR(READER_FILE_READING_ERROR)
+HANDLE_ERROR(READER_EOF_ERROR)
+END_PRINT_ERROR_FUNCTION()
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
-#include <sys/stat.h>
 #include <string.h>
+#include <sys/stat.h>
 
 static size_t GetFileSize(char const *const filename) {
     struct stat file_stat = {};
@@ -69,60 +84,3 @@ void ReaderFinalize(reader_t *const reader) {
 }
 
 
-int WriterInitialize(writer_t *const writer, char const *const filename) {
-    assert(writer);
-
-    writer->file = fopen(filename, "wb");
-    if (writer->file == NULL)
-        return -1;
-
-    writer->array = (char *)calloc(WRITER_BUFFER_SIZE, sizeof(*writer->array));
-    if (writer->array == NULL) {
-        fclose(writer->file);
-        return -1;
-    }
-
-    writer->index = 0;
-    return 0;
-}
-
-int WriterFlush(writer_t *const writer) {
-    assert(writer);
-
-    for (size_t i = 0; i < writer->index; i++) {
-        printf("%d ", writer->array[i]);
-    }
-    printf("\n");
-
-    if (writer->index == 0)
-        return 0;
-    size_t bytes_written = fwrite(writer->array, sizeof(*writer->array), writer->index, writer->file);
-    if (bytes_written != writer->index)
-        return -1;
-
-    writer->index = 0;
-    return 0;
-}
-
-int WriteElement(writer_t *const writer, void *const pointer, size_t const size) {
-    assert(writer);
-
-    if (size > WRITER_BUFFER_SIZE)
-        return -1;
-
-    if (writer->index + size - 1 >= WRITER_BUFFER_SIZE)
-        WriterFlush(writer);
-
-    memcpy(writer->array + writer->index, pointer, size);
-    writer->index += size;
-
-    return 0;
-}
-
-void WriterFinalize(writer_t *const writer) {
-    assert(writer);
-
-    WriterFlush(writer);
-    fclose(writer->file);
-    free(writer->array);
-}

@@ -1,7 +1,7 @@
 #ifndef PROCESSOR_H
 #define PROCESSOR_H
 
-#include "../byteio.h"
+#include "../byteio/reader.h"
 #include "instruction_declaration.h"
 #include "stack.h"
 

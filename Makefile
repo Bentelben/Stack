@@ -6,7 +6,7 @@ COMPILER_FLAGS := $(DED_FLAGS) $(MY_FLAGS)
 
 BUILD_DIR := build
 
-libs := byteio
+libs := byteio/reader byteio/writer
 processor_sources := main stack processor
 assembler_sources := main parser text_utils translator
 

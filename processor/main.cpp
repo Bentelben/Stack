@@ -1,4 +1,4 @@
-#include "../byteio.h"
+#include "../byteio/reader.h"
 
 #include "stack.h"
 #include "processor.h"

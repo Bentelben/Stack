@@ -2,19 +2,24 @@
 ;
 ; D = b*b - 4 * a * c
 
-PUSH 10 ; b
-PUSH 10 ; b
+PUSH 2 ; a
+PUSH 5 ; b
+PUSH 10 ; c
+
+POPR 2
+POPR 1
+POPR 0
+
+PUSHR 1
+PUSHR 1
 MUL
+
 PUSH 4
-PUSH 6 ; a
-PUSH 4 ; c
+PUSHR 0
+PUSHR 2
 MUL
 MUL
 SUB
-OUT
-OUT
-OUT
-OUT
-OUT
+
 OUT
 HLT

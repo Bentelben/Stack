@@ -1,7 +1,7 @@
 #include "translator.h"
 
 #include "../instruction.h"
-#include "../byteio.h"
+#include "../byteio/writer.h"
 
 #include "text_utils.h"
 #include "parser.h"
