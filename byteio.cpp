@@ -11,7 +11,7 @@ static size_t GetFileSize(char const *const filename) {
     return (size_t)file_stat.st_size;
 }
 
-int InitializeReader(reader_t *reader, char const *const filename) {
+int ReaderInitialize(reader_t *reader, char const *const filename) {
     assert(reader);
 
     size_t file_size = GetFileSize(filename);
@@ -28,7 +28,6 @@ int InitializeReader(reader_t *reader, char const *const filename) {
         return -1;
     }
 
-    // ??
     size_t bytes_read = fread(reader->array, sizeof(*reader->array), file_size, file);
     if (bytes_read != file_size) {
         fclose(file);
@@ -41,6 +40,10 @@ int InitializeReader(reader_t *reader, char const *const filename) {
     reader->size = file_size;
     reader->index = 0;
     return 0;
+}
+
+void SetReaderPosition(reader_t *reader, size_t position) {
+    reader->index = position;
 }
 
 bool CanRead(reader_t *const reader) {
@@ -59,14 +62,14 @@ int ReadElement(reader_t *reader, void *const pointer, size_t const size) {
     return 0;
 }
 
-void FinalizeReader(reader_t *const reader) {
+void ReaderFinalize(reader_t *const reader) {
     assert(reader);
 
     free(reader->array);
 }
 
 
-int InitializeWriter(writer_t *const writer, char const *const filename) {
+int WriterInitialize(writer_t *const writer, char const *const filename) {
     assert(writer);
 
     writer->file = fopen(filename, "wb");
@@ -116,7 +119,7 @@ int WriteElement(writer_t *const writer, void *const pointer, size_t const size)
     return 0;
 }
 
-void FinalizeWriter(writer_t *const writer) {
+void WriterFinalize(writer_t *const writer) {
     assert(writer);
 
     WriterFlush(writer);

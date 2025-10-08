@@ -1,6 +1,6 @@
 #include "parser.h"
 
-#include "../instructions.h"
+#include "../instruction.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +20,7 @@ static bool IsTokenSeparator(char const c) {
     return c == ' ';
 }
 
+// TODO ne todo podumat about not use pointer array and parse with 1 scan
 parser_error_t ParseToken(char **const line, parser_function_t const func, void *const result) {
     char buffer[MAX_TOKEN_LENGTH + 1] = "";
 
@@ -44,7 +45,9 @@ parser_error_t ParseToken(char **const line, parser_function_t const func, void 
 
     return PARSER_NO_ERROR;
 }
-
+// TODO parse struct data with enum type of data
+// remove parser functions
+// use union now (int, enum)
 int IntegerParserFunction(char const str[], size_t const str_length, void *const result) {
     (void)str_length;
     int result_length = 0;

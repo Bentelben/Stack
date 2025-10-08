@@ -1,32 +1,38 @@
-#ifndef EXECUTOR_H
-#define EXECUTOR_H
+#ifndef PROCESSOR_H
+#define PROCESSOR_H
 
 #include "../byteio.h"
+#include "instruction_declaration.h"
 #include "stack.h"
 
-enum executor_error_t {
-    EXECUTOR_NO_ERROR,
-    EXECUTOR_READING_ERROR,
-    EXECUTOR_UNKNOWN_INSTRUCTION_ERROR,
-    EXECUTOR_STACK_ERROR,
-    EXECUTOR_DIVISION_BY_ZERO_ERROR,
-    EXECUTOR_SQRT_OF_NEGATIVE_ERROR
+#include <stdint.h>
+
+enum processor_error_offset_t {
+    PROCESSOR_ALLOCATION_ERROR,
+    PROCESSOR_READING_ERROR,
+    PROCESSOR_UNKNOWN_INSTRUCTION_ERROR,
+    PROCESSOR_STACK_ERROR,
+    PROCESSOR_DIVISION_BY_ZERO_ERROR,
+    PROCESSOR_SQRT_OF_NEGATIVE_ERROR
 };
 
-executor_error_t ExecuteInstruction(reader_t *reader, stack_t *stk);
+typedef uint16_t processor_error_t;
 
-#define DECLARE(function_name) executor_error_t Run ## function_name (reader_t *, stack_t *);
+struct processor_t {
+    processor_error_t error;
+    reader_t *reader;
+    stack_t *stack;
+    int registers[8];
+};
 
-DECLARE(HLT);
-DECLARE(PUSH);
-DECLARE(OUT);
-DECLARE(ADD);
-DECLARE(SUB);
-DECLARE(MUL);
-DECLARE(DIV);
+void ProcessorInitialize(processor_t *processor, char const *filename);
+void ExecuteInstruction(processor_t *processor);
+void ProcessorFinalize(processor_t *processor);
 
-DECLARE(SQRT);
+#define INSTRUCTION_(name, argument_count) DECLARE_PROCESSOR_FUNCTION(name);
 
-#undef DECLARE
+#include "../instruction_list.h"
+
+#undef INSTRUCTION_
 
 #endif

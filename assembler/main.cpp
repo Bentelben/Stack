@@ -9,7 +9,7 @@
 #include "parser.h"
 #include "translator.h"
 
-
+// TODO no todo error handler with "backtrace no backtrace"
 static void HandleTranslatorError(translator_error_t const error, char const *const source_filename, line_t const *lines, size_t const text_progress, size_t const line_progress) {
     printf("Error occured while compilation process!\n");
     printf("In source file `%s:%zu`\n\n", source_filename, text_progress + 1);
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     char const *const output_filename = argv[2];
     
     writer_t writer = {};
-    if (InitializeWriter(&writer, output_filename) == -1) {
+    if (WriterInitialize(&writer, output_filename) == -1) {
         printf("Unable open file `%s` for writing\n", output_filename);
         return -1;
     }
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     char *const text = ReadFile(input_filename);
     if (text == NULL) {
         printf("Unable to read file `%s`\n", input_filename);
-        FinalizeWriter(&writer);
+        WriterFinalize(&writer);
         return -1;
     }
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     line_t *const lines = GetLineArray(text, &line_count);
     if (lines == NULL) {
         printf("Internal compiler error occured while creating line array\n");
-        FinalizeWriter(&writer);
+        WriterFinalize(&writer);
         free(text);
         return -1;
     }
@@ -83,14 +83,14 @@ int main(int argc, char *argv[]) {
 
     if (error != TRANSLATOR_NO_ERROR) {
         HandleTranslatorError(error, input_filename, lines, text_progress, line_progress);
-        FinalizeWriter(&writer);
+        WriterFinalize(&writer);
         free(text);
         free(lines);
-        fclose(fopen(output_filename, "w"));
+        fclose(fopen(output_filename, "w")); // TODO use func
         return -1;
     }
     
-    FinalizeWriter(&writer);
+    WriterFinalize(&writer);
     free(text);
     free(lines);
 

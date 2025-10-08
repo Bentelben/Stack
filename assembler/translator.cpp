@@ -1,6 +1,6 @@
 #include "translator.h"
 
-#include "../instructions.h"
+#include "../instruction.h"
 #include "../byteio.h"
 
 #include "text_utils.h"
@@ -34,7 +34,7 @@ translator_error_t TranslateLine(writer_t *const writer, char **const line) {
     assert(writer);
     assert(line);
 
-    unsigned char instruction = 0;
+    unsigned char instruction = 0; // TODO use error handler
     parser_error_t error = ParseToken(line, InstructionParserFunction, &instruction);
     switch (error) {
         case PARSER_TOO_LONG_TOKEN_ERROR:
@@ -52,8 +52,7 @@ translator_error_t TranslateLine(writer_t *const writer, char **const line) {
 
     WriteElement(writer, &instruction, 1);
     
-    size_t i = 0;
-    for (; i < INSTRUCTIONS[instruction].argument_count; i++) {
+    for (size_t i = 0; i < INSTRUCTIONS[instruction].argument_count; i++) {
         int value = 0;
         error = ParseToken(line, IntegerParserFunction, &value);
         switch (error) {

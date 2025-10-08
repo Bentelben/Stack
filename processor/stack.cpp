@@ -4,13 +4,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 static void SetKanareyka(stack_elem_t *const dest) {
-    unsigned char *const dest_uc = (unsigned char *)dest;
-    for (size_t i = 0; i < sizeof(stack_elem_t); i++)
-        dest_uc[i] = KANAREYKA_STACK_VALUE;
-}
+    memset(dest, KANAREYKA_STACK_VALUE, sizeof(stack_elem_t));
+ }
 
 static bool IsKanareyka(stack_elem_t const *const dest) {
     unsigned char const *const dest_uc = (unsigned char const *)dest;
@@ -20,145 +19,59 @@ static bool IsKanareyka(stack_elem_t const *const dest) {
     return true;
 }
 
-#define TRUE_BIT ((stack_error_t)1)
+#define ERROR_SOURCE_ stack
+#define ERROR_SOURCE_TYPE_ stack_t*
+#define ERROR_TYPE_ stack_error_t
 
-#define GET_ERROR_CODE(error_name) (STACK_ ## error_name ## _ERROR)
+#include "../error_handler.h"
 
-#define ADD_ERROR(error_name) \
-    stk->error |= (TRUE_BIT << GET_ERROR_CODE(error_name));
+START_PRINT_ERROR_FUNCTION()
+HANDLE_ERROR(STACK_IS_NULL_ERROR)
+HANDLE_ERROR(STACK_DATA_IS_NULL_ERROR)
+HANDLE_ERROR(STACK_ALLOCATION_ERROR)
+HANDLE_ERROR(STACK_CAPACITY_LESS_SIZE_ERROR)
+HANDLE_ERROR(STACK_CAPACITY_LESS_MIN_CAPACITY_ERROR)
+HANDLE_ERROR(STACK_POP_NO_ITEMS_ERROR)
+HANDLE_ERROR(STACK_PUSH_MAX_CAPACITY_SIZE_ERROR)
+HANDLE_ERROR(STACK_KANAREYKA_DAMAGED_ERROR)
+END_PRINT_ERROR_FUNCTION()
 
-#define SET_ERROR(error_name, value) \
-    if (value) stk->error |= (TRUE_BIT << GET_ERROR_CODE(error_name)); \
-    else stk->error = stk->error & (stack_error_t)(~(TRUE_BIT << GET_ERROR_CODE(error_name)));
+// TODO enalbe/disable canary MACROS
+static bool StackVerify(stack_t *const stack) {
+    if (stack == NULL)
+        return false;
 
-#define RETURN_ERROR_IF(value, error_name)       \
-    if (value) {                                 \
-        ADD_ERROR(error_name)                    \
-        StackDump_(stderr, stk, filename, line); \
-    }                                            \
-    if (value) return
+    RESET_ERROR(STACK_ALLOCATION_ERROR);
+    RESET_ERROR(STACK_POP_NO_ITEMS_ERROR);
+    RESET_ERROR(STACK_PUSH_MAX_CAPACITY_SIZE_ERROR);
 
+    UPDATE_ERROR_VALUE(STACK_CAPACITY_LESS_SIZE_ERROR, stack->size > stack->capacity);
+    UPDATE_ERROR_VALUE(STACK_CAPACITY_LESS_MIN_CAPACITY_ERROR, stack->capacity < MIN_STACK_CAPACITY);
+    UPDATE_ERROR_VALUE(STACK_CAPACITY_BIGGER_MAX_CAPACITY_ERROR, stack->capacity > MAX_STACK_CAPACITY);
 
-#ifndef NDEBUG
-    #define CHECK_RETURN if (!StackVerify(stk) && (StackDump(stderr, stk), 1)) return
-
-    static bool StackVerify(stack_t *const stk) {
-        if (stk == NULL)
-            return false;
-
-        // Reset temporary errors
-        SET_ERROR(ALLOCATION, 0);
-        SET_ERROR(POP_NO_ITEMS, 0);
-        SET_ERROR(PUSH_MAX_CAPACITY_SIZE, 0);
-
-        SET_ERROR(DATA_IS_NULL, stk->data == NULL)
-
-        SET_ERROR(CAPACITY_LESS_SIZE, stk->size > stk->capacity)
-        SET_ERROR(CAPACITY_LESS_MIN_CAPACITY, stk->capacity < MIN_STACK_CAPACITY)
-        SET_ERROR(CAPACITY_BIGGER_MAX_CAPACITY, stk->capacity > MAX_STACK_CAPACITY)
-
-        if (
-            stk->capacity > MAX_STACK_CAPACITY ||
-            !IsKanareyka(stk->data - 1) ||
-            !IsKanareyka(stk->data + stk->capacity)
-        )
-            ADD_ERROR(KANAREYKA_DAMAGED)
-
-        for (size_t i = stk->size; i < stk->capacity; i++)
-            if (stk->data[i] != POISON_STACK_VALUE) {
-                ADD_ERROR(POISON_DAMAGED);
-                break;
-            }
-        
-        return stk->error == 0;
+    if (stack->data == NULL) {
+        SET_ERROR(STACK_DATA_IS_NULL_ERROR);
+        return false;
     }
-#else
-    #define CHECK_RETURN
-#endif
 
-static void ResizeStack(stack_t *const stk, size_t const new_capacity, char const *const filename, size_t const line) {
-    assert(stk);
-    assert(stk->size <= new_capacity);
+    if (
+        stack->capacity > MAX_STACK_CAPACITY || // TODO create another error
+        !IsKanareyka(stack->data - 1) ||
+        !IsKanareyka(stack->data + stack->capacity)
+    )
+        SET_ERROR(STACK_KANAREYKA_DAMAGED_ERROR);
 
-    RETURN_ERROR_IF(new_capacity > MAX_STACK_CAPACITY || new_capacity < MIN_STACK_CAPACITY, ALLOCATION);
-
-    if (stk->data != NULL)
-        stk->data = stk->data - 1;
-
-    stack_elem_t *new_data = (stack_elem_t *)realloc(stk->data, (1 + new_capacity + 1)*sizeof(*stk->data));
-    RETURN_ERROR_IF(new_data == NULL, ALLOCATION);
-
-    new_data = new_data + 1;
-
-    if (stk->data == NULL)
-        SetKanareyka(new_data - 1);
-    SetKanareyka(new_data + new_capacity);
-
-#ifndef NDEBUG
-    if (new_capacity > stk->capacity)
-        for (size_t i = stk->capacity; i < new_capacity; i++)
-            new_data[i] = POISON_STACK_VALUE;
-#endif
-
-    stk->data = new_data;
-    stk->capacity = new_capacity;
-}
-
-
-#define PRINT_ENUM_(error_name)                       \
-        case GET_ERROR_CODE(error_name):              \
-            fprintf(file, #error_name "_ERROR"); \
+    for (size_t i = stack->size; i < stack->capacity; i++)
+        if (stack->data[i] != POISON_STACK_VALUE) {
+            SET_ERROR(STACK_POISON_DAMAGED_ERROR);
             break;
+        } // TODO check not poison 0 to size (poison val in ctor)
 
-void FPrintStackError(FILE *const file, stack_error_t error) {
-    assert(file);
-
-    if (error == 0) {
-        fprintf(file, "NO_ERROR\n");
-        return;
-    }
-
-    size_t i = sizeof(error)*8 - 1;
-    while(error > 0) {
-        if (error >= (TRUE_BIT << i)) {
-
-            error = error - (stack_error_t)(TRUE_BIT << i);
-
-            switch (i) {
-                PRINT_ENUM_(IS_NULL)
-                PRINT_ENUM_(DATA_IS_NULL)
-
-                PRINT_ENUM_(ALLOCATION)
-
-                PRINT_ENUM_(CAPACITY_LESS_SIZE)
-                PRINT_ENUM_(CAPACITY_LESS_MIN_CAPACITY)
-                PRINT_ENUM_(CAPACITY_BIGGER_MAX_CAPACITY)
-
-                PRINT_ENUM_(POP_NO_ITEMS)
-                PRINT_ENUM_(PUSH_MAX_CAPACITY_SIZE)
-
-                PRINT_ENUM_(KANAREYKA_DAMAGED)
-                PRINT_ENUM_(POISON_DAMAGED)
-                default:
-                    fprintf(file, "%zu", i);
-                    break;
-            }
-            if (error != 0)
-                fprintf(file, ", ");
-        }
-
-        if (i == 0)
-            break;
-        i--;
-    }
-
-    fprintf(file, "\n");
+    return stack->error == 0;
 }
-#undef PRINT_ENUM_
 
 #define PRINT_TABBED_(tab_count, format, ...) fprintf(file, "%*s" format, (int)((tab_count)*TAB_SIZE), "", ##__VA_ARGS__)
-
-void StackDump_(FILE *file, stack_t const *const stk, char const *const filename, size_t const line) {
+void StackDump_(FILE *file, stack_t const *const stack, char const *const filename, size_t const line) {
     const size_t TAB_SIZE = 4;
 
     if (file == NULL) {
@@ -167,38 +80,38 @@ void StackDump_(FILE *file, stack_t const *const stk, char const *const filename
     }
 
     PRINT_TABBED_(0, "StackDump called from from %s:%zu\n", filename, line);
-    PRINT_TABBED_(0, "Stack [%p]\n"
-              "{\n", stk); 
+    PRINT_TABBED_(0, "Stack [%p]\n" // TODO add born place
+              "{\n", stack);
 
-    if (stk != NULL) {
-        PRINT_TABBED_(1, "size     = %zu\n", stk->size);
-        PRINT_TABBED_(1, "capacity = %zu (+2)\n", stk->capacity);
+    if (stack != NULL) {
+        PRINT_TABBED_(1, "size     = %zu\n", stack->size);
+        PRINT_TABBED_(1, "capacity = %zu (+2)\n", stack->capacity);
         PRINT_TABBED_(1, "error    = ");
-        FPrintStackError(file, stk->error);
-        PRINT_TABBED_(1, "data [%p]\n", stk->data);
+        FPrintError(file, stack);
+        PRINT_TABBED_(1, "data [%p]\n", stack);
         PRINT_TABBED_(1, "{\n");
 
-        if (stk->data != NULL) {
-        
-            PRINT_TABBED_(2, " [-1] = %d (KANAREYKA)\n", stk->data[-1]);
+        if (stack->data != NULL) {
 
-            for (size_t i = 0; i < stk->capacity; i++) {
+            PRINT_TABBED_(2, " [-1] = %d (KANAREYKA)\n", stack->data[-1]);
+
+            for (size_t i = 0; i < stack->capacity; i++) {
                 PRINT_TABBED_(2, "");
-                if (i < stk->size)
+                if (i < stack->size)
                     fprintf(file, "*");
                 else
                     fprintf(file, " ");
-        
+
                 fprintf(file, "[%zu] = ", i);
-                FPrintStackElement(file, stk->data[i]);
-        
-                if (i >= stk->size && stk->data[i] == POISON_STACK_VALUE)
+                FPrintStackElement(file, stack->data[i]);
+
+                if (i >= stack->size && stack->data[i] == POISON_STACK_VALUE)
                     fprintf(file, " (POISON)");
-                
+
                 fprintf(file, "\n");
             }
 
-            PRINT_TABBED_(2, " [%zu] = %d (KANAREYKA)\n", stk->capacity, stk->data[stk->capacity]);
+            PRINT_TABBED_(2, " [%zu] = %d (KANAREYKA)\n", stack->capacity, stack->data[stack->capacity]);
         }
         PRINT_TABBED_(1, "}\n");
     }
@@ -207,78 +120,114 @@ void StackDump_(FILE *file, stack_t const *const stk, char const *const filename
 #undef PRINT_TABBED_
 
 
-void StackInitialize_(stack_t *const stk, char const *const filename, size_t const line) {
-    RETURN_ERROR_IF(stk == NULL, IS_NULL);
+#ifndef NDEBUG // TODO add release verify macros
+    #define CHECK_RETURN              \
+        if (!StackVerify(stack)) {    \
+            StackDump(stderr, stack); \
+            LOG_ERROR()               \
+            return;                   \
+        }
+#else
+    #define CHECK_RETURN
+#endif
 
-    stk->size = 0;
-    stk->capacity = 0;
-    stk->error = 0;
-    stk->data = NULL;
-    ResizeStack(stk, INIT_STACK_CAPACITY, filename, line);
+static void ResizeStack(stack_t *const stack, size_t const new_capacity) {
+    assert(stack);
+    assert(stack->size <= new_capacity);
+
+    if (stack->data != NULL) {
+        ERROR_ASSERT(new_capacity <= MAX_STACK_CAPACITY && new_capacity >= MIN_STACK_CAPACITY, STACK_ALLOCATION_ERROR);
+        stack->data = stack->data - 1;
+    }
+
+    stack_elem_t *new_data = (stack_elem_t *)realloc(stack->data, (1 + new_capacity + 1)*sizeof(*stack->data));
+    ERROR_ASSERT(new_data != NULL, STACK_ALLOCATION_ERROR);
+
+    new_data = new_data + 1;
+
+    if (stack->data == NULL)
+        SetKanareyka(new_data - 1);
+    SetKanareyka(new_data + new_capacity);
+
+#ifndef NDEBUG
+    if (new_capacity > stack->capacity)
+        for (size_t i = stack->capacity; i < new_capacity; i++)
+            new_data[i] = POISON_STACK_VALUE;
+#endif
+
+    stack->data = new_data;
+    stack->capacity = new_capacity;
+}
+
+void StackInitialize(stack_t *const stack) {
+    if (stack == NULL) {
+        LOG_ERROR()
+        return;
+    }
+
+    stack->size = 0;
+    stack->capacity = 0;
+    stack->error = 0;
+    stack->data = NULL;
+    ResizeStack(stack, INIT_STACK_CAPACITY);
 
     CHECK_RETURN;
 }
 
-void StackPush_(stack_t *const stk, stack_elem_t const elem, char const *const filename, size_t const line) {
+void StackPush(stack_t *const stack, stack_elem_t const elem) {
     CHECK_RETURN;
 
-    if (stk->size == stk->capacity) {
-        RETURN_ERROR_IF(stk->capacity == MAX_STACK_CAPACITY, PUSH_MAX_CAPACITY_SIZE);
+    if (stack->size == stack->capacity) {
+        ERROR_ASSERT(stack->capacity != MAX_STACK_CAPACITY, STACK_PUSH_MAX_CAPACITY_SIZE_ERROR);
 
-        if (stk->capacity > MAX_STACK_CAPACITY/2)
-            ResizeStack(stk, MAX_STACK_CAPACITY, filename, line);
+        if (stack->capacity > MAX_STACK_CAPACITY/2)
+            ResizeStack(stack, MAX_STACK_CAPACITY);
         else
-            ResizeStack(stk, stk->capacity * 2, filename, line);
+            ResizeStack(stack, stack->capacity * 2);
 
         CHECK_RETURN;
     }
 
-    stk->data[stk->size++] = elem;
+    stack->data[stack->size++] = elem;
 
     CHECK_RETURN;
 }
 
-int StackPop_(stack_t *const stk, char const *const filename, size_t const line) {
-    CHECK_RETURN 0;
+void StackPop(stack_t *const stack, stack_elem_t *value) {
+    CHECK_RETURN;
 
-    RETURN_ERROR_IF(stk->size == 0, POP_NO_ITEMS) 0;
+    ERROR_ASSERT(stack->size != 0, STACK_POP_NO_ITEMS_ERROR)
 
-    if (stk->size <= stk->capacity/4 && stk->capacity != MIN_STACK_CAPACITY) {
-        if (stk->capacity / 2 < MIN_STACK_CAPACITY)
-            ResizeStack(stk, MIN_STACK_CAPACITY, filename, line);
+    if (stack->size <= stack->capacity/4 && stack->capacity != MIN_STACK_CAPACITY) {
+        if (stack->capacity / 2 < MIN_STACK_CAPACITY)
+            ResizeStack(stack, MIN_STACK_CAPACITY);
         else
-            ResizeStack(stk, stk->capacity/2, filename, line);
+            ResizeStack(stack, stack->capacity/2);
     }
 
-    stk->size--;
-    int value = stk->data[stk->size];
+    stack->size--;
+    *value = stack->data[stack->size];
 #ifndef NDEBUG
-    stk->data[stk->size] = POISON_STACK_VALUE;
+    stack->data[stack->size] = POISON_STACK_VALUE;
 #endif
 
-    CHECK_RETURN 0;
-    return value;
+    CHECK_RETURN;
 }
 
-void StackFinalize_(stack_t *const stk, char const *const filename, size_t const line) {
-    RETURN_ERROR_IF(stk == NULL, IS_NULL);
+void StackFinalize(stack_t *const stack) {
+    ERROR_ASSERT(stack != NULL, STACK_IS_NULL_ERROR);
 
 #ifndef NDEBUG
-    stk->data[-1] = POISON_STACK_VALUE;
-    stk->data[stk->capacity] = POISON_STACK_VALUE;
-    for (size_t i = 0; i < stk->capacity; i++)
-        stk->data[i] = POISON_STACK_VALUE;
+    stack->data[-1] = POISON_STACK_VALUE;
+    stack->data[stack->capacity] = POISON_STACK_VALUE;
+    for (size_t i = 0; i < stack->capacity; i++)
+        stack->data[i] = POISON_STACK_VALUE;
 #endif
 
-    free(stk->data-1);
-    stk->data = NULL;
-    stk->size = 0;
-    stk->capacity = 0;
+    free(stack->data-1);
+    stack->data = NULL;
+    stack->size = 0;
+    stack->capacity = 0; // TODO replace to debug
 }
 
-#undef RETURN_ERROR_IF
-#undef SET_ERROR
-#undef ADD_ERROR
-#undef GET_ERROR_CODE
-#undef TRUE_BIT
 #undef CHECK_RETURN
