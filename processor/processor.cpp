@@ -89,7 +89,7 @@ DECLARE_PROCESSOR_FUNCTION(OUT) {
     printf("%d\n", value);
 }
 
-#define OPERATOR(name, symbol, ...)          \
+#define OPERATOR_(name, symbol, ...)          \
 DECLARE_PROCESSOR_FUNCTION(name) {           \
     int a = 0, b = 0;                        \
     StackPop(&processor->stack, &b);          \
@@ -101,15 +101,14 @@ DECLARE_PROCESSOR_FUNCTION(name) {           \
     RETURN_IF_ERROR;                         \
 }
 
-OPERATOR(ADD, +)
-OPERATOR(SUB, -)
-OPERATOR(MUL, *)
-OPERATOR(DIV, /,
-    if (b == 0)
-        RAISE_ERROR(PROCESSOR_DIVISION_BY_ZERO_ERROR);
+OPERATOR_(ADD, +)
+OPERATOR_(SUB, -)
+OPERATOR_(MUL, *)
+OPERATOR_(DIV, /,
+    ERROR_ASSERT(b != 0, PROCESSOR_DIVISION_BY_ZERO_ERROR);
 )
 
-#undef OPERATOR
+#undef OPERATOR_
 
 DECLARE_PROCESSOR_FUNCTION(SQRT) {
     int x = 0;
@@ -142,14 +141,29 @@ DECLARE_PROCESSOR_FUNCTION(POPR) {
     RETURN_IF_ERROR;
 }
 
-DECLARE_PROCESSOR_FUNCTION(JMP) {
-    int jump_destination = 0;
-
-    ReadElement(&processor->reader, &jump_destination, sizeof(jump_destination));
-    RETURN_IF_ERROR;
-
-    SetReaderPosition(&processor->reader, (size_t)jump_destination);
+// TODO jump dest not int
+#define JUMPER_(name, condition) \
+DECLARE_PROCESSOR_FUNCTION(name) { \
+    int jump_destination = 0; \
+    ReadElement(&processor->reader, &jump_destination, sizeof(jump_destination)); \
+    RETURN_IF_ERROR; \
+    int a = 0, b = 0; \
+    StackPop(&processor->stack, &b); \
+    RETURN_IF_ERROR; \
+    StackPop(&processor->stack, &a); \
+    RETURN_IF_ERROR; \
+    if (condition) \
+        SetReaderPosition(&processor->reader, (size_t)jump_destination); \
+    RETURN_IF_ERROR; \
 }
+
+JUMPER_(JMP, true)
+JUMPER_(JB,  a <  b)
+JUMPER_(JBE, a <= b)
+JUMPER_(JA,  a >  b)
+JUMPER_(JAE, a >= b)
+JUMPER_(JE,  a == b)
+JUMPER_(JNE, a != b)
 
 void ExecuteInstruction(processor_t *const processor) {
     uint8_t instruction = 0;
