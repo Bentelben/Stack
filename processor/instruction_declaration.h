@@ -1,5 +1,1 @@
-#define PROCESSOR_FUNCTION_NAME(name) Run ## name
 
-#define PROCESSOR_FUNCTION_TEMPLATE(name) void name (processor_t *processor)
-
-#define DECLARE_PROCESSOR_FUNCTION(name) PROCESSOR_FUNCTION_TEMPLATE( PROCESSOR_FUNCTION_NAME(name) )

@@ -25,9 +25,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    while (CanRead(processor.reader)) {
+    while (CanRead(&processor.reader)) {
         ExecuteInstruction(&processor);
-        //StackDump(stdout, &stack);
+        //StackDump(stdout, &processor.stack);
         if (processor.error != 0)
             break;
     }

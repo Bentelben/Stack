@@ -57,6 +57,7 @@ void StackDump_(FILE *file, stack_t const *stack, char const *const filename, si
 void StackInitialize(stack_t *stack);
 void StackPush(stack_t *stack, stack_elem_t elem);
 void StackPop(stack_t *stack, stack_elem_t *value);
+bool StackVerify(stack_t *stack);
 void StackFinalize(stack_t *stack);
 
 #endif

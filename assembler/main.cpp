@@ -1,48 +1,9 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 
-// TODO assembler structure
+#include "assembler.h"
 
-#include "../byteio/writer.h"
-
-#include "text_utils.h"
-#include "parser.h"
-#include "translator.h"
-
-// TODO no todo error handler with "backtrace no backtrace"
-static void HandleTranslatorError(translator_error_t const error, char const *const source_filename, line_t const *lines, size_t const text_progress, size_t const line_progress) {
-    printf("Error occured while compilation process!\n");
-    printf("In source file `%s:%zu`\n\n", source_filename, text_progress + 1);
-    printf("> %s\n  ", lines[text_progress].str);
-    for (size_t i = 0; i < line_progress; i++)
-        printf(" ");
-    printf("^\n");
-
-    switch (error) {
-        case TRANSLATOR_TOO_LONG_TOKEN_ERROR:
-            printf("Token is too long! Maximum token length is %d\n", MAX_TOKEN_LENGTH);
-            break;
-        case TRANSLATOR_INVALID_COMMAND_ERROR:
-            printf("Invalid command!\n");
-            break;
-        case TRANSLATOR_INVALID_ARGUMENT_ERROR:
-            printf("Invalid argument! Argument must be an integer\n");
-            break;
-        case TRANSLATOR_TOO_MANY_ARGUMENTS_ERROR:
-            printf("Too many arguments for this command!\n");
-            break;
-        case TRANSLATOR_TOO_FEW_ARGUMENTS_ERROR:
-            printf("Too few arguments for this command\n");
-            break;
-
-        case TRANSLATOR_NO_ERROR:
-        default:
-            assert(0);
-            break;
-    }
-}
+#define ERROR_TYPE_ assembler_error_t
+#include "../error_handler.h"
 
 int main(int argc, char *argv[]) {
     if (argc == 1)
@@ -57,45 +18,38 @@ int main(int argc, char *argv[]) {
     char const *const input_filename = argv[1];
     char const *const output_filename = argv[2];
     
-    writer_t writer = {};
-    WriterInitialize(&writer, output_filename);
-    if (writer.error != 0) {
-        printf("Unable open file `%s` for writing\n", output_filename);
-        return -1;
-    }
+    assembler_t assembler;
+    AssemblerInitialize(&assembler, input_filename, output_filename);
+    Assemble(&assembler);
 
-    char *const text = ReadFile(input_filename);
-    if (text == NULL) {
-        printf("Unable to read file `%s`\n", input_filename);
-        WriterFinalize(&writer);
+    if (assembler.error != 0) {
+        if (IS_OTHER_ERROR(&assembler, ASSEMBLER_PARSER_ERROR)) {
+            printf("Occured error while parsing code\n");
+        } else if (IS_OTHER_ERROR(&assembler, ASSEMBLER_WRITER_ERROR)) {
+            printf("Occured error while writing bytecode to file\n");
+        } else {
+            printf("Occured syntax error:\n");
+            for (size_t i = 0; assembler.parser.line_cursor[i] != '\n' && assembler.parser.line_cursor[i] != '\0'; i++)
+                printf("%c", assembler.parser.line_cursor[i]);
+            printf("\n");
+            size_t const error_symbol_index = (size_t)(assembler.parser.cursor - assembler.parser.line_cursor);
+            for (size_t i = 0; i < error_symbol_index; i++)
+                printf(" ");
+            printf("^\n");
+            printf("\n");
+        }
+        AssemblerFinalize(&assembler);
         return -1;
     }
+    AssemblerFinalize(&assembler);
 
-    size_t line_count = 0;
-    line_t *const lines = GetLineArray(text, &line_count);
-    if (lines == NULL) {
-        printf("Internal compiler error occured while creating line array\n");
-        WriterFinalize(&writer);
-        free(text);
-        return -1;
+    assembler_t assembler2;
+    AssemblerInitialize(&assembler2, input_filename, output_filename);
+    for (size_t i = 0; i < 256; i++) {
+        assembler2.labels[i] = assembler.labels[i];
     }
-    
-    size_t text_progress = 0;
-    size_t line_progress = 0;
-    translator_error_t error = TranslateText(&writer, lines, line_count, &text_progress, &line_progress);
-
-    if (error != TRANSLATOR_NO_ERROR) {
-        HandleTranslatorError(error, input_filename, lines, text_progress, line_progress);
-        WriterFinalize(&writer);
-        free(text);
-        free(lines);
-        fclose(fopen(output_filename, "w")); // TODO use func
-        return -1;
-    }
-    
-    WriterFinalize(&writer);
-    free(text);
-    free(lines);
+    Assemble(&assembler2);
+    AssemblerFinalize(&assembler2);
 
     return 0;
 }

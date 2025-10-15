@@ -10,6 +10,7 @@
 START_PRINT_ERROR_FUNCTION()
 HANDLE_ERROR(READER_ALLOCATION_ERROR)
 HANDLE_ERROR(READER_FILE_READING_ERROR)
+HANDLE_ERROR(READER_TOO_LONG_TOKEN_ERROR)
 HANDLE_ERROR(READER_EOF_ERROR)
 END_PRINT_ERROR_FUNCTION()
 
@@ -26,35 +27,32 @@ static size_t GetFileSize(char const *const filename) {
     return (size_t)file_stat.st_size;
 }
 
-int ReaderInitialize(reader_t *reader, char const *const filename) {
+void ReaderInitialize(reader_t *reader, char const *const filename) {
     assert(reader);
 
     size_t file_size = GetFileSize(filename);
-    if (file_size == 0)
-        return -1;
+    ERROR_ASSERT(file_size != 0, READER_FILE_READING_ERROR);
 
     FILE *file = fopen(filename, "rb");
-    if (file == NULL)
-        return -1;
+    ERROR_ASSERT(file != NULL, READER_FILE_READING_ERROR);
 
     reader->array = (char *)calloc(file_size, sizeof(*reader->array));
     if (reader->array == NULL) {
         fclose(file);
-        return -1;
+        RAISE_ERROR(READER_ALLOCATION_ERROR);
     }
 
     size_t bytes_read = fread(reader->array, sizeof(*reader->array), file_size, file);
     if (bytes_read != file_size) {
         fclose(file);
         free(reader->array);
-        return -1;
+        RAISE_ERROR(READER_FILE_READING_ERROR);
     }
 
     fclose(file);
 
     reader->size = file_size;
     reader->index = 0;
-    return 0;
 }
 
 void SetReaderPosition(reader_t *reader, size_t position) {
@@ -65,16 +63,13 @@ bool CanRead(reader_t *const reader) {
     return reader->index < reader->size;
 }
 
-int ReadElement(reader_t *reader, void *const pointer, size_t const size) {
+void ReadElement(reader_t *reader, void *const pointer, size_t const size) {
     assert(reader);
 
-    if (reader->index + size - 1 >= reader->size)
-        return -1;
+    ERROR_ASSERT(reader->index + size - 1 < reader->size, READER_TOO_LONG_TOKEN_ERROR);
 
     memcpy(pointer, reader->array + reader->index, size);
     reader->index += size;
-
-    return 0;
 }
 
 void ReaderFinalize(reader_t *const reader) {

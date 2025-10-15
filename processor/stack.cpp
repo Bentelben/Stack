@@ -37,17 +37,19 @@ HANDLE_ERROR(STACK_KANAREYKA_DAMAGED_ERROR)
 END_PRINT_ERROR_FUNCTION()
 
 // TODO enalbe/disable canary MACROS
-static bool StackVerify(stack_t *const stack) {
+
+bool StackVerify(stack_t *const stack) {
     if (stack == NULL)
         return false;
 
-    RESET_ERROR(STACK_ALLOCATION_ERROR);
-    RESET_ERROR(STACK_POP_NO_ITEMS_ERROR);
-    RESET_ERROR(STACK_PUSH_MAX_CAPACITY_SIZE_ERROR);
+    if (stack->size > stack->capacity)
+        SET_ERROR(STACK_CAPACITY_LESS_SIZE_ERROR);
 
-    UPDATE_ERROR_VALUE(STACK_CAPACITY_LESS_SIZE_ERROR, stack->size > stack->capacity);
-    UPDATE_ERROR_VALUE(STACK_CAPACITY_LESS_MIN_CAPACITY_ERROR, stack->capacity < MIN_STACK_CAPACITY);
-    UPDATE_ERROR_VALUE(STACK_CAPACITY_BIGGER_MAX_CAPACITY_ERROR, stack->capacity > MAX_STACK_CAPACITY);
+    if (stack->capacity < MIN_STACK_CAPACITY)
+        SET_ERROR(STACK_CAPACITY_LESS_MIN_CAPACITY_ERROR);
+
+    if (stack->capacity > MAX_STACK_CAPACITY)
+        SET_ERROR(STACK_CAPACITY_BIGGER_MAX_CAPACITY_ERROR);
 
     if (stack->data == NULL) {
         SET_ERROR(STACK_DATA_IS_NULL_ERROR);
@@ -120,11 +122,11 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const filena
 #undef PRINT_TABBED_
 
 
-#ifndef NDEBUG // TODO add release verify macros
+#ifdef STACK_VERIFIER // TODO add release verify macros
     #define CHECK_RETURN              \
         if (!StackVerify(stack)) {    \
             StackDump(stderr, stack); \
-            LOG_ERROR()               \
+            LOG_ERROR();              \
             return;                   \
         }
 #else
@@ -149,7 +151,7 @@ static void ResizeStack(stack_t *const stack, size_t const new_capacity) {
         SetKanareyka(new_data - 1);
     SetKanareyka(new_data + new_capacity);
 
-#ifndef NDEBUG
+#ifdef STACK_VERIFIER
     if (new_capacity > stack->capacity)
         for (size_t i = stack->capacity; i < new_capacity; i++)
             new_data[i] = POISON_STACK_VALUE;
@@ -161,7 +163,7 @@ static void ResizeStack(stack_t *const stack, size_t const new_capacity) {
 
 void StackInitialize(stack_t *const stack) {
     if (stack == NULL) {
-        LOG_ERROR()
+        LOG_ERROR();
         return;
     }
 
@@ -196,7 +198,7 @@ void StackPush(stack_t *const stack, stack_elem_t const elem) {
 void StackPop(stack_t *const stack, stack_elem_t *value) {
     CHECK_RETURN;
 
-    ERROR_ASSERT(stack->size != 0, STACK_POP_NO_ITEMS_ERROR)
+    ERROR_ASSERT(stack->size != 0, STACK_POP_NO_ITEMS_ERROR);
 
     if (stack->size <= stack->capacity/4 && stack->capacity != MIN_STACK_CAPACITY) {
         if (stack->capacity / 2 < MIN_STACK_CAPACITY)
@@ -207,7 +209,7 @@ void StackPop(stack_t *const stack, stack_elem_t *value) {
 
     stack->size--;
     *value = stack->data[stack->size];
-#ifndef NDEBUG
+#ifdef STACK_VERIFIER
     stack->data[stack->size] = POISON_STACK_VALUE;
 #endif
 
@@ -217,7 +219,7 @@ void StackPop(stack_t *const stack, stack_elem_t *value) {
 void StackFinalize(stack_t *const stack) {
     ERROR_ASSERT(stack != NULL, STACK_IS_NULL_ERROR);
 
-#ifndef NDEBUG
+#ifdef STACK_VERIFIER
     stack->data[-1] = POISON_STACK_VALUE;
     stack->data[stack->capacity] = POISON_STACK_VALUE;
     for (size_t i = 0; i < stack->capacity; i++)

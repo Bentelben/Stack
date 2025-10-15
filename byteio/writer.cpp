@@ -30,15 +30,11 @@ void WriterInitialize(writer_t *const writer, char const *const filename) {
     }
 
     writer->index = 0;
+    writer->global_index = 0;
 }
 
 void WriterFlush(writer_t *const writer) {
     assert(writer);
-
-    for (size_t i = 0; i < writer->index; i++) {
-        printf("%d ", writer->array[i]);
-    }
-    printf("\n");
 
     if (writer->index == 0)
         return;
@@ -60,6 +56,7 @@ void WriteElement(writer_t *const writer, void *const pointer, size_t const size
 
     memcpy(writer->array + writer->index, pointer, size);
     writer->index += size;
+    writer->global_index += size;
 }
 
 void WriterFinalize(writer_t *const writer) {

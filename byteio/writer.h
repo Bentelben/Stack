@@ -20,6 +20,7 @@ struct writer_t {
     FILE *file;
     char *array;
     size_t index;
+    size_t global_index;
 };
 
 void WriterInitialize(writer_t *writer, char const *filename);

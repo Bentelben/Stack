@@ -4,25 +4,46 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-// TODO realloc maybe
-#define MAX_TOKEN_LENGTH 255
-
-// TODO error handling
+#include "../instruction.h"
 
 enum parser_error_offset_t {
-    PARSER_TOO_LONG_TOKEN_ERROR,
-    PARSER_EOF_ERROR,
-
+    PARSER_FILE_READING_ERROR,
     PARSER_INVALID_TOKEN_ERROR
 };
 
-typedef int (*parser_function_t)(char const str[], size_t str_length, void *result);
+typedef uint8_t parser_error_t;
 
-bool CanParseNextToken(char **const line);
-parser_error_t ParseToken(char **line, parser_function_t func, void *result);
+struct parser_t {
+    parser_error_t error;
+    bool isEOF;
+    char *text;
+    char *cursor;
+    char *line_cursor;
+};
 
-int IntegerParserFunction(char const str[], size_t str_length, void *result);
-int InstructionParserFunction(char const str[], size_t str_length, void *result);
+enum token_type_t {
+    NUMBER_TOKEN,
+    INSTRUCTION_TOKEN,
+    REGISTER_TOKEN,
+    LABEL_TOKEN
+};
 
+struct token_t {
+    enum token_type_t type;
+    union {
+        int number_data;
+        instruction_code_t instruction_data;
+        register_code_t register_data;
+        struct {
+            size_t label_code; // TODO string
+            //char *label_string;
+            //size_t label_length;
+        } label_data;
+    } data;
+};
+
+void ParserInitialize(parser_t *parser, char const *filename);
+void ParseToken(parser_t *parser, token_t *token);
+void ParserFinalize(parser_t *parser);
 
 #endif
