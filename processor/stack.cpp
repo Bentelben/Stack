@@ -19,13 +19,12 @@ HANDLE_ERROR(STACK_PUSH_MAX_CAPACITY_SIZE_ERROR)
 HANDLE_ERROR(STACK_KANAREYKA_DAMAGED_ERROR)
 END_PRINT_ERROR_FUNCTION
 
-// TODO enalbe/disable canary MACROS
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
+#ifdef STACK_KANAREYKA
 static void SetKanareyka(stack_elem_t *const dest) {
     memset(dest, KANAREYKA_STACK_VALUE, sizeof(stack_elem_t));
 }
@@ -37,6 +36,7 @@ static bool IsKanareyka(stack_elem_t const *const dest) {
             return false;
     return true;
 }
+#endif
 
 bool StackVerify(stack_t *const stack) {
     if (stack == NULL)
@@ -56,11 +56,13 @@ bool StackVerify(stack_t *const stack) {
         return false;
     }
 
+#ifdef STACK_KANAREYKA
     if (
         !IsKanareyka(stack->data - 1) ||
         !IsKanareyka(stack->data + stack->capacity)
     )
         SET_ERROR(STACK_KANAREYKA_DAMAGED_ERROR);
+#endif
 
     for (size_t i = stack->size; i < stack->capacity; i++) {
         if (stack->data[i] != POISON_STACK_VALUE) {
@@ -100,7 +102,9 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const functi
 
         if (stack->data != NULL) {
 
+#ifdef STACK_KANAREYKA
             PRINT_TABBED_(2, " [-1] = %d (KANAREYKA)\n", stack->data[-1]);
+#endif
 
             for (size_t i = 0; i < stack->capacity; i++) {
                 PRINT_TABBED_(2, "");
@@ -118,7 +122,10 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const functi
                 fprintf(file, "\n");
             }
 
+#ifdef STACK_KANAREYKA
             PRINT_TABBED_(2, " [%zu] = %d (KANAREYKA)\n", stack->capacity, stack->data[stack->capacity]);
+#endif
+
         }
         PRINT_TABBED_(1, "}\n");
     }
@@ -152,9 +159,11 @@ static void ResizeStack(stack_t *const stack, size_t const new_capacity) {
 
     new_data = new_data + 1;
 
+#ifdef STACK_KANAREYKA
     if (stack->data == NULL)
         SetKanareyka(new_data - 1);
     SetKanareyka(new_data + new_capacity);
+#endif
 
 #ifdef STACK_VERIFIER
     if (new_capacity > stack->capacity)
