@@ -6,11 +6,11 @@
 
 #include "../error_handler.h"
 
-START_PRINT_ERROR_FUNCTION()
+START_PRINT_ERROR_FUNCTION
 HANDLE_ERROR(ASSEMBLER_PARSER_ERROR)
 HANDLE_ERROR(ASSEMBLER_WRITER_ERROR)
 HANDLE_ERROR(ASSEMBLER_SYNTAX_ERROR)
-END_PRINT_ERROR_FUNCTION()
+END_PRINT_ERROR_FUNCTION
 
 #include <assert.h>
 
@@ -18,7 +18,7 @@ END_PRINT_ERROR_FUNCTION()
 
 #include "settings.h"
 
-void AssemblerInitialize(assembler_t *assembler, char const *input_filename, char const *output_filename) {
+void AssemblerInitialize(assembler_t *const assembler, char const *const input_filename, char const *const output_filename) {
     assert(assembler);
     assert(input_filename);
     assert(output_filename);
@@ -35,7 +35,7 @@ void AssemblerInitialize(assembler_t *assembler, char const *input_filename, cha
     }
 }
 
-void Assemble(assembler_t *assembler) {
+void Assemble(assembler_t *const assembler) {
     uint8_t instruction = 0;
     size_t needed_argument_count = 0;
     while (1) {
@@ -83,7 +83,7 @@ void Assemble(assembler_t *assembler) {
     }
 }
 
-void AssemblerFinalize(assembler_t *assembler) {
+void AssemblerFinalize(assembler_t *const assembler) {
     ParserFinalize(&assembler->parser);
     WriterFinalize(&assembler->writer);
 }

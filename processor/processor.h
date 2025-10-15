@@ -2,7 +2,6 @@
 #define PROCESSOR_H
 
 #include "../byteio/reader.h"
-#include "instruction_declaration.h"
 #include "stack.h"
 
 #include <stdint.h>

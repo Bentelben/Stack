@@ -6,9 +6,7 @@
 static char const COMMENT_SYMBOL = ';';
 
 static char const *REGISTERS[] = {
-    "AX",
-    "BX",
-    "CX"
+    "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX"
 };
 
 static register_code_t const REGISTER_COUNT = (register_code_t)(sizeof(REGISTERS)/sizeof(*REGISTERS));

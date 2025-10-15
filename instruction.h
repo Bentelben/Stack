@@ -2,7 +2,6 @@
 #define INSTRUCTION_H
 
 #include <stdint.h>
-#include <stdlib.h>
 
 typedef uint8_t register_code_t;
 typedef uint8_t instruction_code_t;

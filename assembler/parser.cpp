@@ -6,10 +6,15 @@
 
 #include "../error_handler.h"
 
-START_PRINT_ERROR_FUNCTION()
+START_PRINT_ERROR_FUNCTION
 HANDLE_ERROR(PARSER_FILE_READING_ERROR)
 HANDLE_ERROR(PARSER_INVALID_TOKEN_ERROR)
-END_PRINT_ERROR_FUNCTION()
+END_PRINT_ERROR_FUNCTION
+
+#include "../instruction.h"
+
+#include "text_utils.h"
+#include "settings.h"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -17,13 +22,9 @@ END_PRINT_ERROR_FUNCTION()
 #include <string.h>
 #include <assert.h>
 
-#include "text_utils.h"
-#include "settings.h"
-
-#include "../instruction.h"
-
-void ParserInitialize(parser_t *parser, char const *filename) {
+void ParserInitialize(parser_t *const parser, char const *const filename) {
     assert(parser);
+    assert(filename);
 
     parser->error = 0;
     parser->isEOF = false;
@@ -37,14 +38,15 @@ static inline bool IsSeparator(char const symbol) {
     return isspace(symbol) || symbol == '\0' || symbol == COMMENT_SYMBOL;
 }
 
-// FIXME ASSERTSSSSSS
-static void SkipSpaces(parser_t *parser) {
+static void SkipSpaces(parser_t *const parser) {
+    assert(parser);
+
     for (; *parser->cursor != '\0'; parser->cursor++) {
         char const c = *parser->cursor;
         if (c == ';') {
-            char *next_line = strchr(parser->cursor, '\n'); // TODO strpbrk
-            if (next_line == NULL)
-                next_line = strchr(parser->cursor, '\0');
+            //char *const next_line = strpbrk(parser->cursor, "\n\0");
+            char *next_line = parser->cursor;
+            while (*next_line != '\0' && *next_line != '\n') next_line++;
             parser->cursor = next_line - 1;
         } else if (c == '\n') {
             parser->line_cursor = parser->cursor+1;
@@ -53,7 +55,7 @@ static void SkipSpaces(parser_t *parser) {
     }
 }
 
-static bool TryParseNumber(char const *buffer, size_t buffer_length, token_t *token) {
+static bool TryParseNumber(char const *const buffer, size_t const buffer_length, token_t *const token) {
     token->type = NUMBER_TOKEN;
     int bytes_read = 0;
     if (sscanf(buffer, "%d%n", &token->data.number_data, &bytes_read) != 1)
@@ -61,13 +63,13 @@ static bool TryParseNumber(char const *buffer, size_t buffer_length, token_t *to
     return (size_t)bytes_read == buffer_length;
 }
 
-static bool TryParseLabel(char const *buffer, size_t buffer_length, token_t *token) {
+static bool TryParseLabel(char const *const buffer, size_t const buffer_length, token_t *const token) {
     bool res = TryParseNumber(buffer + 1, buffer_length-1, token);
     token->type = LABEL_TOKEN;
     return res;
 }
 
-static bool TryParseRegister(char const *buffer, size_t buffer_length, token_t *token) {
+static bool TryParseRegister(char const *const buffer, size_t const buffer_length, token_t *const token) {
     token->type = REGISTER_TOKEN;
     for (register_code_t i = 0; i < REGISTER_COUNT; i++) {
         if (strncmp(REGISTERS[i], buffer, buffer_length) == 0) {
@@ -79,7 +81,7 @@ static bool TryParseRegister(char const *buffer, size_t buffer_length, token_t *
     return false;
 }
 
-static bool TryParseInstruction(char const *buffer, size_t buffer_length, token_t *token) {
+static bool TryParseInstruction(char const *const buffer, size_t const buffer_length, token_t *const token) {
     token->type = INSTRUCTION_TOKEN;
     for (instruction_code_t i = 0; i < INSTRUCTION_COUNT; i++) {
         if (strncmp(INSTRUCTIONS[i].name, buffer, buffer_length) == 0) {
@@ -92,7 +94,10 @@ static bool TryParseInstruction(char const *buffer, size_t buffer_length, token_
 }
 
 // TODO strtok
-void ParseToken(parser_t *parser, token_t *token) {
+void ParseToken(parser_t *const parser, token_t *const token) {
+    assert(parser);
+    assert(token);
+
     SkipSpaces(parser);
 
     char const *buffer = parser->cursor;
@@ -113,7 +118,6 @@ void ParseToken(parser_t *parser, token_t *token) {
     }
     else if (TryParseRegister(buffer, buffer_length, token)) {
     }
-
     else if (TryParseInstruction(buffer, buffer_length, token)) {
     }
     else {
@@ -123,7 +127,7 @@ void ParseToken(parser_t *parser, token_t *token) {
     parser->cursor = parser->cursor + buffer_length;
 }
 
-void ParserFinalize(parser_t *parser) {
+void ParserFinalize(parser_t *const parser) {
     assert(parser);
 
     free(parser->text);

@@ -48,13 +48,20 @@ struct stack_t {
     size_t size;
     size_t capacity;
     stack_error_t error;
+    
+    struct {
+        char const *function_name;
+        char const *file_name;
+        size_t line;
+    } born_place;
 };
 
 
 void FPrintStackError(FILE *const file, stack_t *stack);
-#define StackDump(file, stack) StackDump_(file, stack, __FILE__, __LINE__)
-void StackDump_(FILE *file, stack_t const *stack, char const *const filename, size_t const line);
-void StackInitialize(stack_t *stack);
+#define StackDump(file, stack) StackDump_(file, stack, __func__, __FILE__, __LINE__)
+void StackDump_(FILE *file, stack_t const *stack, char const *function_name, char const *file_name, size_t line);
+#define StackInitialize(stack) StackInitialize_(stack, __func__, __FILE__, __LINE__)
+void StackInitialize_(stack_t *stack, char const *function_name, char const *file_name, size_t line);
 void StackPush(stack_t *stack, stack_elem_t elem);
 void StackPop(stack_t *stack, stack_elem_t *value);
 bool StackVerify(stack_t *stack);

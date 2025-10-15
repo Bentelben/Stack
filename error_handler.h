@@ -37,8 +37,7 @@ do { \
 
 
 // TODO run destructor after error
-// TODO remove skobochka
-#define START_PRINT_ERROR_FUNCTION() \
+#define START_PRINT_ERROR_FUNCTION \
 static void FPrintError(FILE *const file, const ERROR_SOURCE_TYPE_ ERROR_SOURCE_) { \
     if (ERROR_SOURCE_ == NULL) { \
         fprintf(stderr, STR(ERROR_SOURCE_) "_IS_NULL_ERROR\n"); \
@@ -60,7 +59,7 @@ static void FPrintError(FILE *const file, const ERROR_SOURCE_TYPE_ ERROR_SOURCE_
                     fprintf(file, #error_code "\n"); \
                     break;
 
-#define END_PRINT_ERROR_FUNCTION() \
+#define END_PRINT_ERROR_FUNCTION \
                 default: \
                     fprintf(file, "%zu", i); \
                     break; \

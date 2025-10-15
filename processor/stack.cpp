@@ -2,30 +2,13 @@
 #include "stack.h"
 #undef STACK_CPP
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-
-static void SetKanareyka(stack_elem_t *const dest) {
-    memset(dest, KANAREYKA_STACK_VALUE, sizeof(stack_elem_t));
- }
-
-static bool IsKanareyka(stack_elem_t const *const dest) {
-    unsigned char const *const dest_uc = (unsigned char const *)dest;
-    for (size_t i = 0; i < sizeof(stack_elem_t); i++)
-        if (dest_uc[i] != KANAREYKA_STACK_VALUE)
-            return false;
-    return true;
-}
-
 #define ERROR_SOURCE_ stack
 #define ERROR_SOURCE_TYPE_ stack_t*
 #define ERROR_TYPE_ stack_error_t
 
 #include "../error_handler.h"
 
-START_PRINT_ERROR_FUNCTION()
+START_PRINT_ERROR_FUNCTION
 HANDLE_ERROR(STACK_IS_NULL_ERROR)
 HANDLE_ERROR(STACK_DATA_IS_NULL_ERROR)
 HANDLE_ERROR(STACK_ALLOCATION_ERROR)
@@ -34,9 +17,26 @@ HANDLE_ERROR(STACK_CAPACITY_LESS_MIN_CAPACITY_ERROR)
 HANDLE_ERROR(STACK_POP_NO_ITEMS_ERROR)
 HANDLE_ERROR(STACK_PUSH_MAX_CAPACITY_SIZE_ERROR)
 HANDLE_ERROR(STACK_KANAREYKA_DAMAGED_ERROR)
-END_PRINT_ERROR_FUNCTION()
+END_PRINT_ERROR_FUNCTION
 
 // TODO enalbe/disable canary MACROS
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+static void SetKanareyka(stack_elem_t *const dest) {
+    memset(dest, KANAREYKA_STACK_VALUE, sizeof(stack_elem_t));
+}
+
+static bool IsKanareyka(stack_elem_t const *const dest) {
+    unsigned char const *const dest_uc = (unsigned char const *)dest;
+    for (size_t i = 0; i < sizeof(stack_elem_t); i++)
+        if (dest_uc[i] != KANAREYKA_STACK_VALUE)
+            return false;
+    return true;
+}
 
 bool StackVerify(stack_t *const stack) {
     if (stack == NULL)
@@ -57,23 +57,23 @@ bool StackVerify(stack_t *const stack) {
     }
 
     if (
-        stack->capacity > MAX_STACK_CAPACITY || // TODO create another error
         !IsKanareyka(stack->data - 1) ||
         !IsKanareyka(stack->data + stack->capacity)
     )
         SET_ERROR(STACK_KANAREYKA_DAMAGED_ERROR);
 
-    for (size_t i = stack->size; i < stack->capacity; i++)
+    for (size_t i = stack->size; i < stack->capacity; i++) {
         if (stack->data[i] != POISON_STACK_VALUE) {
             SET_ERROR(STACK_POISON_DAMAGED_ERROR);
             break;
         } // TODO check not poison 0 to size (poison val in ctor)
+    }
 
     return stack->error == 0;
 }
 
 #define PRINT_TABBED_(tab_count, format, ...) fprintf(file, "%*s" format, (int)((tab_count)*TAB_SIZE), "", ##__VA_ARGS__)
-void StackDump_(FILE *file, stack_t const *const stack, char const *const filename, size_t const line) {
+void StackDump_(FILE *file, stack_t const *const stack, char const *const function_name, char const *const file_name, size_t const line) {
     const size_t TAB_SIZE = 4;
 
     if (file == NULL) {
@@ -81,9 +81,14 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const filena
         PRINT_TABBED_(0, "Dump output file not specified!\n");
     }
 
-    PRINT_TABBED_(0, "StackDump called from from %s:%zu\n", filename, line);
-    PRINT_TABBED_(0, "Stack [%p]\n" // TODO add born place
-              "{\n", stack);
+    PRINT_TABBED_(0, "StackDump called from from %s %s:%zu\n", function_name, file_name, line);
+    PRINT_TABBED_(0, "Stack [%p] ", stack);
+    PRINT_TABBED_(0, "born in %s %s:%zu)\n",
+        stack->born_place.function_name,
+        stack->born_place.file_name,
+        stack->born_place.line
+    );
+    PRINT_TABBED_(0, "{\n");
 
     if (stack != NULL) {
         PRINT_TABBED_(1, "size     = %zu\n", stack->size);
@@ -122,7 +127,7 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const filena
 #undef PRINT_TABBED_
 
 
-#ifdef STACK_VERIFIER // TODO add release verify macros
+#ifdef STACK_VERIFIER
     #define CHECK_RETURN              \
         if (!StackVerify(stack)) {    \
             StackDump(stderr, stack); \
@@ -161,11 +166,15 @@ static void ResizeStack(stack_t *const stack, size_t const new_capacity) {
     stack->capacity = new_capacity;
 }
 
-void StackInitialize(stack_t *const stack) {
+void StackInitialize_(stack_t *const stack, char const *function_name, char const *file_name, size_t const line) {
     if (stack == NULL) {
         LOG_ERROR();
         return;
     }
+
+    stack->born_place.function_name = function_name;
+    stack->born_place.file_name = file_name;
+    stack->born_place.line = line;
 
     stack->size = 0;
     stack->capacity = 0;
@@ -224,12 +233,16 @@ void StackFinalize(stack_t *const stack) {
     stack->data[stack->capacity] = POISON_STACK_VALUE;
     for (size_t i = 0; i < stack->capacity; i++)
         stack->data[i] = POISON_STACK_VALUE;
+
+    stack->size = 0;
+    stack->capacity = 0;
 #endif
 
     free(stack->data-1);
+
+#ifdef STACK_VERIFIER
     stack->data = NULL;
-    stack->size = 0;
-    stack->capacity = 0; // TODO replace to debug
+#endif
 }
 
 #undef CHECK_RETURN

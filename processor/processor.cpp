@@ -1,29 +1,28 @@
 #include "processor.h"
 
-#include "../byteio/reader.h"
-#include "stack.h"
-
-#include <math.h>
-#include <stdint.h>
-#include <assert.h>
-
-#include "../instruction.h"
-
 #define ERROR_SOURCE_ processor
 #define ERROR_SOURCE_TYPE_ processor_t*
 #define ERROR_TYPE_ processor_error_t
 
 #include "../error_handler.h"
 
-START_PRINT_ERROR_FUNCTION()
+START_PRINT_ERROR_FUNCTION
 HANDLE_ERROR(PROCESSOR_READING_ERROR)
 HANDLE_ERROR(PROCESSOR_UNKNOWN_INSTRUCTION_ERROR)
 HANDLE_ERROR(PROCESSOR_STACK_ERROR)
 HANDLE_ERROR(PROCESSOR_DIVISION_BY_ZERO_ERROR)
 HANDLE_ERROR(PROCESSOR_SQRT_OF_NEGATIVE_ERROR)
-END_PRINT_ERROR_FUNCTION()
+END_PRINT_ERROR_FUNCTION
 
-bool ProcessorVerify(processor_t *processor) {
+#include "../instruction.h"
+
+#include "stack.h"
+
+#include <math.h>
+#include <stdint.h>
+#include <assert.h>
+
+bool ProcessorVerify(processor_t *const processor) {
     if (processor == NULL)
         return false;
 
@@ -48,7 +47,7 @@ bool ProcessorVerify(processor_t *processor) {
     #define RETURN_IF_ERROR
 #endif
 
-void ProcessorInitialize(processor_t *processor, char const *filename) {
+void ProcessorInitialize(processor_t *const processor, char const *const filename) {
     ReaderInitialize(&processor->reader, filename);
     RETURN_IF_ERROR;
 
@@ -56,11 +55,9 @@ void ProcessorInitialize(processor_t *processor, char const *filename) {
     RETURN_IF_ERROR;
 }
 
-void ProcessorFinalize(processor_t *processor) {
+void ProcessorFinalize(processor_t *const processor) {
     assert(processor);
 
-    // TODO set proc values 0
-    
     ReaderFinalize(&processor->reader);
     StackFinalize(&processor->stack);
 }
@@ -151,10 +148,10 @@ DECLARE_PROCESSOR_FUNCTION(JMP) {
     ReadElement(&processor->reader, &jump_destination, sizeof(jump_destination));
     RETURN_IF_ERROR;
 
-    SetReaderPosition(&processor->reader, jump_destination);
+    SetReaderPosition(&processor->reader, (size_t)jump_destination);
 }
 
-void ExecuteInstruction(processor_t *processor) {
+void ExecuteInstruction(processor_t *const processor) {
     uint8_t instruction = 0;
     
     ReadElement(&processor->reader, &instruction, sizeof(instruction));
