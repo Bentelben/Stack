@@ -10,8 +10,10 @@ enum processor_error_offset_t {
     PROCESSOR_READING_ERROR,
     PROCESSOR_UNKNOWN_INSTRUCTION_ERROR,
     PROCESSOR_STACK_ERROR,
+    PROCESSOR_CALL_STACK_ERROR,
     PROCESSOR_DIVISION_BY_ZERO_ERROR,
-    PROCESSOR_SQRT_OF_NEGATIVE_ERROR
+    PROCESSOR_SQRT_OF_NEGATIVE_ERROR,
+    PROCESSOR_WRONG_REGISTER_INDEX_ERROR
 };
 
 typedef uint16_t processor_error_t;
@@ -20,6 +22,7 @@ struct processor_t {
     processor_error_t error;
     reader_t reader;
     stack_t stack;
+    stack_t call_stack;
     int registers[8]; // TODO const
 };
 

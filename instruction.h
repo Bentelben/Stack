@@ -5,6 +5,7 @@
 
 typedef uint8_t register_code_t;
 typedef uint8_t instruction_code_t;
+typedef size_t instruction_pointer_t;
 
 #define INSTRUCTION_(name, argument_count) name ## _code ,
 enum instruction_enum_t {

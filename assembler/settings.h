@@ -4,6 +4,7 @@
 #include "../instruction.h"
 
 static char const COMMENT_SYMBOL = ';';
+static char const LABEL_SYMBOL = ':';
 
 static char const *REGISTERS[] = {
     "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX"

@@ -18,7 +18,10 @@ struct parser_t {
     bool isEOF;
     char *text;
     char *cursor;
+
     char *line_cursor;
+    size_t line_index;
+    char *last_token_cursor;
 };
 
 enum token_type_t {
@@ -35,9 +38,8 @@ struct token_t {
         instruction_code_t instruction_data;
         register_code_t register_data;
         struct {
-            size_t label_code; // TODO string
-            //char *label_string;
-            //size_t label_length;
+            char const *name;
+            size_t length;
         } label_data;
     } data;
 };

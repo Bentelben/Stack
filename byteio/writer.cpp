@@ -17,15 +17,20 @@ END_PRINT_ERROR_FUNCTION
 #include <stdint.h>
 #include <assert.h>
 
-void WriterInitialize(writer_t *const writer, char const *const filename) {
+void WriterInitialize(writer_t *const writer, char const *const filename, bool silent) {
     assert(writer);
 
-    writer->file = fopen(filename, "wb");
-    ERROR_ASSERT(writer->file != NULL, WRITER_FILE_WRITING_ERROR);
+    writer->silent = silent;
+
+    if (!silent) {
+        writer->file = fopen(filename, "wb");
+        ERROR_ASSERT(writer->file != NULL, WRITER_FILE_WRITING_ERROR);
+    }
 
     writer->array = (char *)calloc(WRITER_BUFFER_SIZE, sizeof(*writer->array));
     if (writer->array == NULL) {
-        fclose(writer->file);
+        if (!silent)
+            fclose(writer->file);
         RAISE_ERROR(WRITER_ALLOCATION_ERROR);
     }
 
@@ -39,14 +44,16 @@ void WriterFlush(writer_t *const writer) {
     if (writer->index == 0)
         return;
 
-    size_t bytes_written = fwrite(writer->array, sizeof(*writer->array), writer->index, writer->file);
-    if (bytes_written != writer->index)
-        RAISE_ERROR(WRITER_FILE_WRITING_ERROR);
+    if (!writer->silent) {
+        size_t bytes_written = fwrite(writer->array, sizeof(*writer->array), writer->index, writer->file);
+        if (bytes_written != writer->index)
+            RAISE_ERROR(WRITER_FILE_WRITING_ERROR);
+    }
 
     writer->index = 0;
 }
 
-void WriteElement(writer_t *const writer, void *const pointer, size_t const size) {
+void WriteElement(writer_t *const writer, void const *const pointer, size_t const size) {
     assert(writer);
 
     ERROR_ASSERT(size <= WRITER_BUFFER_SIZE, WRITER_ELEMENT_BIGGER_THAN_BUFFER_ERROR);
@@ -63,6 +70,7 @@ void WriterFinalize(writer_t *const writer) {
     assert(writer);
 
     WriterFlush(writer);
-    fclose(writer->file);
+    if (!writer->silent)
+        fclose(writer->file);
     free(writer->array);
 }
