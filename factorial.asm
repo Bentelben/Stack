@@ -1,5 +1,5 @@
-PUSH 3
-CALL :factorial(x)wd
+IN
+CALL :factorial(x)
 OUT
 HLT
 

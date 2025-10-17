@@ -14,6 +14,7 @@ HANDLE_ERROR(PROCESSOR_CALL_STACK_ERROR)
 HANDLE_ERROR(PROCESSOR_DIVISION_BY_ZERO_ERROR)
 HANDLE_ERROR(PROCESSOR_SQRT_OF_NEGATIVE_ERROR)
 HANDLE_ERROR(PROCESSOR_WRONG_REGISTER_INDEX_ERROR)
+HANDLE_ERROR(PROCESSOR_WRONG_USER_INPUT_ERROR)
 END_PRINT_ERROR_FUNCTION
 
 #include "../instruction.h"
@@ -84,6 +85,16 @@ DECLARE_PROCESSOR_FUNCTION(PUSH) {
 
     ReadElement(&processor->reader, &value, sizeof(value));
     RETURN_IF_ERROR;
+
+    StackPush(&processor->stack, value);
+    RETURN_IF_ERROR;
+}
+
+DECLARE_PROCESSOR_FUNCTION(IN) {
+    int value = 0;
+
+    int code = scanf("%d", &value);
+    ERROR_ASSERT(code == 1, PROCESSOR_WRONG_USER_INPUT_ERROR);
 
     StackPush(&processor->stack, value);
     RETURN_IF_ERROR;

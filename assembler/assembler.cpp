@@ -90,6 +90,7 @@ void Assemble(assembler_t *const assembler) {
                 break;
 
             case INSTRUCTION_TOKEN:
+                // TODO PUSH selects PUSHR & PUSH
                 ERROR_ASSERT(needed_argument_count == 0, ASSEMBLER_SYNTAX_ERROR);
                 WriteElement(&assembler->writer, &token.data.instruction_data, sizeof(token.data.instruction_data));
                 instruction = token.data.instruction_data;
@@ -98,7 +99,7 @@ void Assemble(assembler_t *const assembler) {
 
             case REGISTER_TOKEN:
                 ERROR_ASSERT(needed_argument_count == 1, ASSEMBLER_SYNTAX_ERROR);
-                ERROR_ASSERT(instruction == PUSH_code || instruction == PUSHR_code || instruction == POPR_code, ASSEMBLER_SYNTAX_ERROR);
+                ERROR_ASSERT(instruction == PUSHR_code || instruction == POPR_code, ASSEMBLER_SYNTAX_ERROR);
                 WriteElement(&assembler->writer, &token.data.register_data, sizeof(token.data.register_data));
                 needed_argument_count--;
                 break;

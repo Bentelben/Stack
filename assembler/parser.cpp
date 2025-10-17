@@ -104,6 +104,7 @@ void ParseToken(parser_t *const parser, token_t *const token) {
     assert(token);
 
     SkipSpaces(parser);
+    parser->last_token_cursor = parser->cursor;
 
     char const *buffer = parser->cursor;
     size_t buffer_length = 0;
@@ -115,21 +116,15 @@ void ParseToken(parser_t *const parser, token_t *const token) {
     if (buffer_length == 0) {
         parser->isEOF = true;
     }
-    else if (isdigit(*parser->cursor)) {
-        ERROR_ASSERT(TryParseNumber(buffer, buffer_length, token), PARSER_INVALID_TOKEN_ERROR);
-    } 
     else if (*parser->cursor == ':') {
         ERROR_ASSERT(TryParseLabel(buffer, buffer_length, token), PARSER_INVALID_TOKEN_ERROR);
-    }
-    else if (TryParseRegister(buffer, buffer_length, token)) {
-    }
-    else if (TryParseInstruction(buffer, buffer_length, token)) {
-    }
-    else {
+    } else if (TryParseNumber(buffer, buffer_length, token)) {
+    } else if (TryParseRegister(buffer, buffer_length, token)) {
+    } else if (TryParseInstruction(buffer, buffer_length, token)) {
+    } else {
         RAISE_ERROR(PARSER_INVALID_TOKEN_ERROR);
     }
     
-    parser->last_token_cursor = parser->cursor;
     parser->cursor = parser->cursor + buffer_length;
 }
 

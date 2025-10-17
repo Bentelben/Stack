@@ -3,9 +3,13 @@
 //            Name  Argument
 //                   count
 INSTRUCTION_(  HLT,    0)
+
 INSTRUCTION_(  PUSH,   1)
 // TODO POP VOID
+
+INSTRUCTION_(  IN,     0)
 INSTRUCTION_(  OUT,    0)
+
 INSTRUCTION_(  ADD,    0)
 INSTRUCTION_(  SUB,    0)
 INSTRUCTION_(  MUL,    0)
