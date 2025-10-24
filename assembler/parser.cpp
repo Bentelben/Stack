@@ -57,12 +57,12 @@ static bool TryParseNumber(char const *const buffer, size_t const buffer_length,
     token->type = NUMBER_TOKEN;
 
     if (buffer_length == 1 && isalpha(buffer[0])) {
-        token->data.number_data = (int)buffer[0];
+        token->data.number_data = (double)(int)buffer[0];
         return true;
     }
 
     int bytes_read = 0;
-    if (sscanf(buffer, "%d%n", &token->data.number_data, &bytes_read) != 1)
+    if (sscanf(buffer, "%lf%n", &token->data.number_data, &bytes_read) != 1)
         return false;
     return (size_t)bytes_read == buffer_length;
 }

@@ -25,8 +25,8 @@ struct processor_t {
     reader_t reader;
     stack_t stack;
     stack_t call_stack;
-    int registers[REGISTER_COUNT];
-    int ram[RAM_SIZE]; 
+    stack_elem_t registers[REGISTER_COUNT];
+    stack_elem_t ram[RAM_SIZE]; 
     char vram[VSCREEN_HEIGHT*VSCREEN_WIDTH];
 };
 

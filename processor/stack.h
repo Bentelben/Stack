@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 // Element settings
-typedef int stack_elem_t;
+typedef double stack_elem_t;
 static const stack_elem_t POISON_STACK_VALUE = -1189;
 
 // Capacity settings
@@ -16,13 +16,13 @@ static const size_t MIN_STACK_CAPACITY = 8;
 // Kanareyka settings
 static const unsigned char KANAREYKA_STACK_VALUE = 0xED;
 
-#ifdef STACK_CPP
-void FPrintStackElement(FILE *file, stack_elem_t value);
-
-void FPrintStackElement(FILE *const file, stack_elem_t const value) {
-    fprintf(file, "%d", value);
+static void FPrintStackElement(FILE *const file, stack_elem_t const value) {
+    fprintf(file, "%lf", value);
 }
-#endif
+
+static int FScanStackElement(FILE *const file, stack_elem_t *const value) {
+    return fscanf(file, "%lf", value);
+}
 
 typedef uint16_t stack_error_t;
 

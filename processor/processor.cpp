@@ -91,7 +91,7 @@ DECLARE_PROCESSOR_FUNCTION(DRAW) {
 }
 
 DECLARE_PROCESSOR_FUNCTION(PUSH) {
-    int value = 0;
+    stack_elem_t value = 0;
 
     ReadElement(&processor->reader, &value, sizeof(value));
     RETURN_IF_ERROR;
@@ -101,48 +101,55 @@ DECLARE_PROCESSOR_FUNCTION(PUSH) {
 }
 
 #ifdef STACK_VERIFIER
-    #define CMD_USE_REG(command_name, task) \
+    #define CMD_REG_SUBSCRIPT(command_name, task) \
         DECLARE_PROCESSOR_FUNCTION(command_name) { \
             register_code_t register_index = 0; \
             ReadElement(&processor->reader, &register_index, sizeof(register_index)); \
             RETURN_IF_ERROR; \
             ERROR_ASSERT(register_index < 8, PROCESSOR_WRONG_REGISTER_INDEX_ERROR); \
+            size_t index = (size_t)processor->registers[register_index]; \
+            (void)index; \
             task \
             RETURN_IF_ERROR; \
         }
 #else
-    #define PUSH_USE_REG(command_name, task) \
+    #define CMD_REG_SUBSCRIPT(command_name, task) \
         DECLARE_PROCESSOR_FUNCTION(command_name) { \
             register_code_t register_index = 0; \
             ReadElement(&processor->reader, &register_index, sizeof(register_index)); \
             RETURN_IF_ERROR; \
+            size_t index = (size_t)processor->registers[register_index]; \
+            (void)index; \
             task \
             RETURN_IF_ERROR; \
         }
 #endif
 
-CMD_USE_REG(PUSHR,
+CMD_REG_SUBSCRIPT(PUSHR,
     StackPush(&processor->stack, processor->registers[register_index]);
 )
 
-CMD_USE_REG(PUSHM, 
-    StackPush(&processor->stack, processor->ram[processor->registers[register_index]]);
+CMD_REG_SUBSCRIPT(PUSHM, 
+    StackPush(&processor->stack, processor->ram[index]);
 )
 
-CMD_USE_REG(PUSHV, 
-    StackPush(&processor->stack, (char)processor->vram[processor->registers[register_index]]);
+CMD_REG_SUBSCRIPT(PUSHV, 
+    StackPush(&processor->stack, (stack_elem_t)processor->vram[index]);
 )
 
-CMD_USE_REG(POPR, 
+CMD_REG_SUBSCRIPT(POPR, 
     StackPop(&processor->stack, processor->registers + register_index);
 )
 
-CMD_USE_REG(POPM, 
-    StackPop(&processor->stack, processor->ram + processor->registers[register_index]);
+CMD_REG_SUBSCRIPT(POPM, 
+    StackPop(&processor->stack, processor->ram + index);
 )
 
-CMD_USE_REG(POPV, 
-    StackPop(&processor->stack, (stack_elem_t *)(processor->vram + processor->registers[register_index]));
+CMD_REG_SUBSCRIPT(POPV, 
+    stack_elem_t symbol = 0;
+    StackPop(&processor->stack, &symbol);
+    RETURN_IF_ERROR;
+    processor->vram[index] = (char)symbol;
 )
 
 #undef CMD_USE_REG
@@ -152,9 +159,9 @@ static void DoJump(processor_t *const processor, instruction_pointer_t destinati
 }
 
 DECLARE_PROCESSOR_FUNCTION(IN) {
-    int value = 0;
+    stack_elem_t value = 0;
 
-    int code = scanf("%d", &value); // TODO stack push/pop void* (острожно) for adress // TODO typedef to processor elem
+    int code = FScanStackElement(stdin, &value);
     ERROR_ASSERT(code == 1, PROCESSOR_WRONG_USER_INPUT_ERROR);
 
     StackPush(&processor->stack, value);
@@ -162,43 +169,44 @@ DECLARE_PROCESSOR_FUNCTION(IN) {
 }
 
 DECLARE_PROCESSOR_FUNCTION(OUT) {
-    int value = 0;
+    stack_elem_t value = 0;
 
     StackPop(&processor->stack, &value);
     RETURN_IF_ERROR;
 
-    printf("%d\n", value);
+    FPrintStackElement(stdout, value);
+    printf("\n");
 }
 
-#define OPERATOR_(name, symbol, ...)          \
-DECLARE_PROCESSOR_FUNCTION(name) {           \
-    int a = 0, b = 0;                        \
-    StackPop(&processor->stack, &b);          \
-    RETURN_IF_ERROR;                         \
-    StackPop(&processor->stack, &a);          \
-    RETURN_IF_ERROR;                         \
-    __VA_ARGS__                              \
+#define OPERATOR_(name, symbol, ...) \
+DECLARE_PROCESSOR_FUNCTION(name) { \
+    stack_elem_t a = 0, b = 0; \
+    StackPop(&processor->stack, &b); \
+    RETURN_IF_ERROR; \
+    StackPop(&processor->stack, &a); \
+    RETURN_IF_ERROR; \
+    __VA_ARGS__ \
     StackPush(&processor->stack, a symbol b); \
-    RETURN_IF_ERROR;                         \
+    RETURN_IF_ERROR; \
 }
 
 OPERATOR_(ADD, +)
 OPERATOR_(SUB, -)
 OPERATOR_(MUL, *)
 OPERATOR_(DIV, /,
-    ERROR_ASSERT(b != 0, PROCESSOR_DIVISION_BY_ZERO_ERROR);
+    ERROR_ASSERT(fabs(b) >= 1e-14, PROCESSOR_DIVISION_BY_ZERO_ERROR);
 )
 
 #undef OPERATOR_
 
 DECLARE_PROCESSOR_FUNCTION(SQRT) {
-    int x = 0;
+    stack_elem_t x = 0;
     StackPop(&processor->stack, &x);
     RETURN_IF_ERROR;
 
     ERROR_ASSERT(x >= 0, PROCESSOR_SQRT_OF_NEGATIVE_ERROR);
 
-    StackPush(&processor->stack, (int)sqrt(x));
+    StackPush(&processor->stack, sqrt(x));
     RETURN_IF_ERROR;
 }
 
@@ -207,7 +215,7 @@ DECLARE_PROCESSOR_FUNCTION(name) { \
     instruction_pointer_t jump_destination = 0; \
     ReadElement(&processor->reader, &jump_destination, sizeof(jump_destination)); \
     RETURN_IF_ERROR; \
-    int a = 0, b = 0; \
+    stack_elem_t a = 0, b = 0; \
     StackPop(&processor->stack, &b); \
     RETURN_IF_ERROR; \
     StackPop(&processor->stack, &a); \
@@ -222,8 +230,8 @@ JUMPER_(JB,  a <  b)
 JUMPER_(JBE, a <= b)
 JUMPER_(JA,  a >  b)
 JUMPER_(JAE, a >= b)
-JUMPER_(JE,  a == b)
-JUMPER_(JNE, a != b)
+JUMPER_(JE,  fabs(a - b) < 1e-14)
+JUMPER_(JNE, fabs(a - b) >= 1e-14)
 
 
 DECLARE_PROCESSOR_FUNCTION(CALL) {
@@ -232,7 +240,7 @@ DECLARE_PROCESSOR_FUNCTION(CALL) {
     ReadElement(&processor->reader, &jump_destination, sizeof(jump_destination));
     RETURN_IF_ERROR;
 
-    StackPush(&processor->call_stack, (int)processor->reader.index); // TODO stack with another type
+    StackPush(&processor->call_stack, (stack_elem_t)processor->reader.index);
     RETURN_IF_ERROR;
 
     DoJump(processor, jump_destination);
@@ -240,7 +248,7 @@ DECLARE_PROCESSOR_FUNCTION(CALL) {
 }
 
 DECLARE_PROCESSOR_FUNCTION(RET) {
-    int jump_destination = 0;
+    stack_elem_t jump_destination = 0;
 
     StackPop(&processor->call_stack, &jump_destination);
     RETURN_IF_ERROR;
@@ -255,6 +263,8 @@ void ExecuteInstruction(processor_t *const processor) {
     
     ReadElement(&processor->reader, &instruction, sizeof(instruction));
     RETURN_IF_ERROR;
+
+    //printf("processing %d\n", instruction);
 
     switch (instruction) {
 

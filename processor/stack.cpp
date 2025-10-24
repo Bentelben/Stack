@@ -101,11 +101,11 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const functi
         PRINT_TABBED_(1, "{\n");
 
         if (stack->data != NULL) {
-
 #ifdef STACK_KANAREYKA
-            PRINT_TABBED_(2, " [-1] = %d (KANAREYKA)\n", stack->data[-1]);
+            PRINT_TABBED_(2, "[-1] = ");
+            FPrintStackElement(file, stack->data[-1]);
+            fprintf(file, " (KANAREYKA)\n");
 #endif
-
             for (size_t i = 0; i < stack->capacity; i++) {
                 PRINT_TABBED_(2, "");
                 if (i < stack->size)
@@ -115,17 +115,16 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const functi
 
                 fprintf(file, "[%zu] = ", i);
                 FPrintStackElement(file, stack->data[i]);
-
                 if (i >= stack->size && stack->data[i] == POISON_STACK_VALUE)
                     fprintf(file, " (POISON)");
 
                 fprintf(file, "\n");
             }
-
 #ifdef STACK_KANAREYKA
-            PRINT_TABBED_(2, " [%zu] = %d (KANAREYKA)\n", stack->capacity, stack->data[stack->capacity]);
+            PRINT_TABBED_(2, "[%zu] = ", stack->capacity);
+            FPrintStackElement(file, stack->data[stack->capacity]);
+            fprintf(file, " (KANAREYKA)\n");
 #endif
-
         }
         PRINT_TABBED_(1, "}\n");
     }

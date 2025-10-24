@@ -31,7 +31,7 @@ enum token_type_t {
 struct token_t {
     enum token_type_t type;
     union {
-        int number_data;
+        double number_data;
         instruction_code_t instruction_data;
         register_code_t register_data;
         struct {
