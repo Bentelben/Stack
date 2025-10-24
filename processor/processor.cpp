@@ -179,6 +179,20 @@ DECLARE_PROCESSOR_FUNCTION(IN) {
     RETURN_IF_ERROR;
 }
 
+DECLARE_PROCESSOR_FUNCTION(DUB) {
+    stack_elem_t value = 0;
+
+    StackPop(&processor->stack, &value);
+    RETURN_IF_ERROR;
+
+    StackPush(&processor->stack, value);
+    RETURN_IF_ERROR;
+
+    StackPush(&processor->stack, value);
+    RETURN_IF_ERROR;
+}
+
+
 DECLARE_PROCESSOR_FUNCTION(OUT) {
     stack_elem_t value = 0;
 

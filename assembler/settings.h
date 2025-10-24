@@ -11,7 +11,7 @@ static char const *REGISTERS[REGISTER_COUNT] = {
     "SCREEN_HEIGHT", 
     "TOP_Y",
     "LEFT_X",
-    "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX"
+    "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX", "TMP"
 };
 
 
