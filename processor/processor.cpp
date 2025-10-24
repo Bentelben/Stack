@@ -78,6 +78,16 @@ void ProcessorFinalize(processor_t *const processor) {
 
 DECLARE_PROCESSOR_FUNCTION(HLT) {
     SetReaderPosition(&processor->reader, processor->reader.size);
+    RETURN_IF_ERROR;
+}
+
+DECLARE_PROCESSOR_FUNCTION(DRAW) {
+    for (size_t y = 0; y < VSCREEN_HEIGHT; y++) {
+        for (size_t x = 0; x < VSCREEN_WIDTH; x++) {
+            printf("%c", processor->vram[y * VSCREEN_HEIGHT + x]);
+        }
+        printf("\n");
+    }
 }
 
 DECLARE_PROCESSOR_FUNCTION(PUSH) {
@@ -90,10 +100,61 @@ DECLARE_PROCESSOR_FUNCTION(PUSH) {
     RETURN_IF_ERROR;
 }
 
+#ifdef STACK_VERIFIER
+    #define CMD_USE_REG(command_name, task) \
+        DECLARE_PROCESSOR_FUNCTION(command_name) { \
+            register_code_t register_index = 0; \
+            ReadElement(&processor->reader, &register_index, sizeof(register_index)); \
+            RETURN_IF_ERROR; \
+            ERROR_ASSERT(register_index < 8, PROCESSOR_WRONG_REGISTER_INDEX_ERROR); \
+            task \
+            RETURN_IF_ERROR; \
+        }
+#else
+    #define PUSH_USE_REG(command_name, task) \
+        DECLARE_PROCESSOR_FUNCTION(command_name) { \
+            register_code_t register_index = 0; \
+            ReadElement(&processor->reader, &register_index, sizeof(register_index)); \
+            RETURN_IF_ERROR; \
+            task \
+            RETURN_IF_ERROR; \
+        }
+#endif
+
+CMD_USE_REG(PUSHR,
+    StackPush(&processor->stack, processor->registers[register_index]);
+)
+
+CMD_USE_REG(PUSHM, 
+    StackPush(&processor->stack, processor->ram[processor->registers[register_index]]);
+)
+
+CMD_USE_REG(PUSHV, 
+    StackPush(&processor->stack, (char)processor->vram[processor->registers[register_index]]);
+)
+
+CMD_USE_REG(POPR, 
+    StackPop(&processor->stack, processor->registers + register_index);
+)
+
+CMD_USE_REG(POPM, 
+    StackPop(&processor->stack, processor->ram + processor->registers[register_index]);
+)
+
+CMD_USE_REG(POPV, 
+    StackPop(&processor->stack, (stack_elem_t *)(processor->vram + processor->registers[register_index]));
+)
+
+#undef CMD_USE_REG
+
+static void DoJump(processor_t *const processor, instruction_pointer_t destination) {
+    SetReaderPosition(&processor->reader, (size_t)destination);
+}
+
 DECLARE_PROCESSOR_FUNCTION(IN) {
     int value = 0;
 
-    int code = scanf("%d", &value);
+    int code = scanf("%d", &value); // TODO stack push/pop void* (острожно) for adress // TODO typedef to processor elem
     ERROR_ASSERT(code == 1, PROCESSOR_WRONG_USER_INPUT_ERROR);
 
     StackPush(&processor->stack, value);
@@ -139,38 +200,6 @@ DECLARE_PROCESSOR_FUNCTION(SQRT) {
 
     StackPush(&processor->stack, (int)sqrt(x));
     RETURN_IF_ERROR;
-}
-
-DECLARE_PROCESSOR_FUNCTION(PUSHR) {
-    register_code_t register_index = 0;
-
-    ReadElement(&processor->reader, &register_index, sizeof(register_index));
-    RETURN_IF_ERROR;
-
-#ifdef STACK_VERIFIER
-    ERROR_ASSERT(register_index < 8, PROCESSOR_WRONG_REGISTER_INDEX_ERROR);
-#endif
-
-    StackPush(&processor->stack, processor->registers[register_index]);
-    RETURN_IF_ERROR;
-}
-
-DECLARE_PROCESSOR_FUNCTION(POPR) {
-    register_code_t register_index = 0;
-
-    ReadElement(&processor->reader, &register_index, sizeof(register_index));
-    RETURN_IF_ERROR;
-
-#ifdef STACK_VERIFIER
-    ERROR_ASSERT(register_index < 8, PROCESSOR_WRONG_REGISTER_INDEX_ERROR);
-#endif
-
-    StackPop(&processor->stack, &processor->registers[register_index]);
-    RETURN_IF_ERROR;
-}
-
-static void DoJump(processor_t *const processor, instruction_pointer_t destination) {
-    SetReaderPosition(&processor->reader, (size_t)destination);
 }
 
 #define JUMPER_(name, condition) \

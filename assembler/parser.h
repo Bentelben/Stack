@@ -18,13 +18,10 @@ struct parser_t {
     bool isEOF;
     char *text;
     char *cursor;
-
-    char *line_cursor;
-    size_t line_index;
-    char *last_token_cursor;
 };
 
 enum token_type_t {
+    UNKNOWN_TOKEN,
     NUMBER_TOKEN,
     INSTRUCTION_TOKEN,
     REGISTER_TOKEN,
@@ -42,6 +39,7 @@ struct token_t {
             size_t length;
         } label_data;
     } data;
+    char *text;
 };
 
 void ParserInitialize(parser_t *parser, char const *filename);

@@ -9,8 +9,12 @@
 START_PRINT_ERROR_FUNCTION
 HANDLE_ERROR(ASSEMBLER_PARSER_ERROR)
 HANDLE_ERROR(ASSEMBLER_WRITER_ERROR)
-HANDLE_ERROR(ASSEMBLER_SYNTAX_ERROR)
 HANDLE_ERROR(ASSEMBLER_ALLOCATION_ERROR)
+HANDLE_ERROR(ASSEMBLER_EXPECTED_INSTRUCTION_ERROR)
+HANDLE_ERROR(ASSEMBLER_EXPECTED_LABEL_OR_ADDRESS_ERROR)
+HANDLE_ERROR(ASSEMBLER_EXPECTED_NUMBER_ERROR)
+HANDLE_ERROR(ASSEMBLER_EXPECTED_REGISTER_ERROR)
+HANDLE_ERROR(ASSEMBLER_UNKNOWN_LABEL_ERROR)
 END_PRINT_ERROR_FUNCTION
 
 #include "../instruction.h"
@@ -20,112 +24,211 @@ END_PRINT_ERROR_FUNCTION
 #include <assert.h>
 #include <string.h>
 
-void AssemblerInitialize(assembler_t *const assembler, char const *const input_filename, char const *const output_filename, bool silent) {
-    assert(assembler);
-    assert(input_filename);
-    assert(output_filename);
+static void AssembleData(assembler_t *assembler, void *data, size_t size, assembler_stage_t stage) {
+    assembler->byteArrayIndex += size;
+    if (stage == ASSEMBLER_MAIN_STAGE)
+        WriterWriteElement(&assembler->writer, data, size);
+}
 
-    assembler->error = 0;
-    assembler->labels = NULL;
-    ParserInitialize(&assembler->parser, input_filename);
+static void ParseTokens(assembler_t *assembler) {
+    assert(assembler);
+
+    ParserInitialize(&assembler->parser, assembler->inputFileName);
     ERROR_ASSERT(assembler->parser.error == 0, ASSEMBLER_PARSER_ERROR);
 
-    WriterInitialize(&assembler->writer, output_filename, silent);
-    ERROR_ASSERT(assembler->writer.error == 0, ASSEMBLER_WRITER_ERROR);
-}
-
-static label_t const *FindLabel(assembler_t *const assembler, token_t *const token) {
-    assert(assembler);
-    assert(token);
-
-    char const *const name = token->data.label_data.name;
-    size_t const length = token->data.label_data.length;
-
-    for (label_t const *next_label = assembler->labels; next_label != NULL; next_label = next_label->next)
-        if (length == next_label->length && (strncmp(name, next_label->name, length) == 0))
-            return next_label;
-    return NULL;
-}
-
-static int AppendLabel(assembler_t *const assembler, token_t *const token, size_t jump_destination) {
-    assert(assembler);
-    assert(token);
-    
-    char const *const name = token->data.label_data.name;
-    size_t const length = token->data.label_data.length;
-
-    label_t **next_label_field = &assembler->labels;
-    while (*next_label_field != NULL) {
-        if ((*next_label_field)->length == length && (strncmp((*next_label_field)->name, name, length) == 0))
-            return 1;
-        next_label_field = &(*next_label_field)->next;
-    }
-    
-    *next_label_field = (label_t *)calloc(1, sizeof(**next_label_field));
-    if (next_label_field == NULL) 
-        return -1;
-
-    (*next_label_field)->name = token->data.label_data.name;
-    (*next_label_field)->length = token->data.label_data.length;
-    (*next_label_field)->jump_destination = jump_destination;
-    (*next_label_field)->next = NULL;
-    return 0;
-}
-
-void Assemble(assembler_t *const assembler) {
-    uint8_t instruction = 0;
-    size_t needed_argument_count = 0;
     while (1) {
-        token_t token = {};
-        ParseToken(&assembler->parser, &token);
+        if (assembler->nTokens >= assembler->tokenCapacity) {
+            if (assembler->tokenCapacity == 0)
+                assembler->tokenCapacity = 8;
+
+            assembler->tokens = (token_t *)realloc(assembler->tokens, sizeof(*assembler->tokens)*assembler->tokenCapacity*2);
+            assert(assembler->tokens);
+            assembler->tokenCapacity *= 2;
+        }
+
+        ParseToken(&assembler->parser, assembler->tokens + assembler->nTokens);
         ERROR_ASSERT(assembler->parser.error == 0, ASSEMBLER_PARSER_ERROR);
         if (assembler->parser.isEOF)
             break;
 
-        switch(token.type) {
-            case NUMBER_TOKEN:
-                ERROR_ASSERT(needed_argument_count > 0, ASSEMBLER_SYNTAX_ERROR);
-                WriteElement(&assembler->writer, &token.data.number_data, sizeof(token.data.number_data));
-                needed_argument_count--;
-                break;
+        assembler->nTokens++;
+    }
+}
 
-            case INSTRUCTION_TOKEN:
-                // TODO PUSH selects PUSHR & PUSH
-                ERROR_ASSERT(needed_argument_count == 0, ASSEMBLER_SYNTAX_ERROR);
-                WriteElement(&assembler->writer, &token.data.instruction_data, sizeof(token.data.instruction_data));
-                instruction = token.data.instruction_data;
-                needed_argument_count = INSTRUCTIONS[token.data.instruction_data].argument_count;
-                break;
+void AssemblerInitialize(assembler_t *const assembler, char const *const inputFileName, char const *const outputFileName) {
+    assert(assembler);
+    assert(inputFileName);
+    assert(outputFileName);
 
-            case REGISTER_TOKEN:
-                ERROR_ASSERT(needed_argument_count == 1, ASSEMBLER_SYNTAX_ERROR);
-                ERROR_ASSERT(instruction == PUSHR_code || instruction == POPR_code, ASSEMBLER_SYNTAX_ERROR);
-                WriteElement(&assembler->writer, &token.data.register_data, sizeof(token.data.register_data));
-                needed_argument_count--;
-                break;
+    assembler->error = 0;
+    assembler->inputFileName = inputFileName;
+    assembler->outputFileName = outputFileName;
 
-            case LABEL_TOKEN:
-                // TODO check for commands
-                if (needed_argument_count == 0) {
-                    int const code = AppendLabel(assembler, &token, assembler->writer.global_index);
-                    ERROR_ASSERT(code != -1, ASSEMBLER_ALLOCATION_ERROR);
-                    ERROR_ASSERT(!assembler->writer.silent || code != 1, ASSEMBLER_SYNTAX_ERROR);
-                } else {
-                    label_t const *const label = FindLabel(assembler, &token);
+    assembler->tokens = NULL;
+    assembler->nTokens = 0;
+    assembler->tokenCapacity = 0;
+    assembler->tokenIndex = 0;
+    assembler->byteArrayIndex = 0;
 
-                    instruction_pointer_t jump_destination = 0;
+    assembler->labels = NULL;
+    assembler->nLabels = 0;
+    assembler->labelCapacity = 0;
 
-                    ERROR_ASSERT(assembler->writer.silent || label != NULL, ASSEMBLER_SYNTAX_ERROR);
-                    if (label != NULL)
-                        jump_destination = label->jump_destination;
+    WriterInitialize(&assembler->writer, outputFileName);
+    ERROR_ASSERT(assembler->writer.error == 0, ASSEMBLER_WRITER_ERROR);
 
-                    WriteElement(&assembler->writer, &jump_destination, sizeof(jump_destination));
-                    needed_argument_count--;
-                }
-                break;
-            default:
-                RAISE_ERROR(ASSEMBLER_SYNTAX_ERROR);
-                break;
+    ParseTokens(assembler);
+    if (assembler->error != 0)
+        return;
+}
+
+void AssemblerRun(assembler_t *assembler) {
+    assert(assembler);
+
+    AssemblerRunStage(assembler, ASSEMBLER_LABEL_LINKING_STAGE);
+    if (assembler->error != 0)
+        return;
+    AssemblerRunStage(assembler, ASSEMBLER_MAIN_STAGE);
+}
+
+static label_t *FindLabel(assembler_t *const assembler, token_t *const token) {
+    assert(assembler);
+    assert(token);
+
+    char const *const name = token->data.label_data.name;
+    size_t const length = token->data.label_data.length;
+
+    for (size_t i = 0; i < assembler->nLabels; i++)
+        if (length == assembler->labels[i].length && (strncmp(name, assembler->labels[i].name, length) == 0))
+            return assembler->labels + i;
+    
+    return NULL;
+}
+
+static void AppendLabel(assembler_t *const assembler, token_t *const token, size_t jump_destination) {
+    assert(assembler);
+    assert(token);
+    
+    if (assembler->nLabels >= assembler->labelCapacity) {
+        if (assembler->labelCapacity == 0)
+            assembler->labelCapacity = 8;
+        assembler->labelCapacity *= 2;
+        assembler->labels = (label_t *)realloc(assembler->labels, assembler->labelCapacity*sizeof(*assembler->labels));
+        assert(assembler->labels);
+    }
+
+    label_t *label = assembler->labels + assembler->nLabels++;
+    label->name = token->data.label_data.name;
+    label->length = token->data.label_data.length;
+    label->jump_destination = jump_destination;
+}
+
+static void AssembleRegister(assembler_t *const assembler, assembler_stage_t stage) {
+    token_t *token = assembler->tokens + assembler->tokenIndex;
+    ERROR_ASSERT(token->type == REGISTER_TOKEN, ASSEMBLER_EXPECTED_REGISTER_ERROR);
+
+    AssembleData(assembler, &token->data.register_data, sizeof(token->data.register_data), stage);
+}
+
+static void AssembleNumber(assembler_t *const assembler, assembler_stage_t stage) {
+    token_t *token = assembler->tokens + assembler->tokenIndex;
+    ERROR_ASSERT(token->type == NUMBER_TOKEN, ASSEMBLER_EXPECTED_NUMBER_ERROR);
+
+    AssembleData(assembler, &token->data.number_data, sizeof(token->data.number_data), stage);
+}
+
+static void AssembleLabelOrAddress(assembler_t *const assembler, assembler_stage_t stage) {
+    token_t *token = assembler->tokens + assembler->tokenIndex;
+    ERROR_ASSERT(token->type == NUMBER_TOKEN || token->type == LABEL_TOKEN, ASSEMBLER_EXPECTED_LABEL_OR_ADDRESS_ERROR);
+    if (token->type == NUMBER_TOKEN) {
+        AssembleData(assembler, &token->data.number_data, sizeof(token->data.number_data), stage);
+    } else {
+        size_t jumpDestination = 0;
+        if (stage == ASSEMBLER_MAIN_STAGE) {
+            label_t *label = FindLabel(assembler, token);
+            ERROR_ASSERT(label, ASSEMBLER_UNKNOWN_LABEL_ERROR);
+            jumpDestination = label->jump_destination;
+        }
+        AssembleData(assembler, &jumpDestination, sizeof(jumpDestination), stage);
+    }
+}
+
+static void AssembleInstruction(assembler_t *const assembler, assembler_stage_t stage) {
+    token_t *instructionToken = assembler->tokens + assembler->tokenIndex;
+    ERROR_ASSERT(instructionToken->type == INSTRUCTION_TOKEN, ASSEMBLER_EXPECTED_INSTRUCTION_ERROR);
+
+    instruction_code_t instruction = instructionToken->data.instruction_data;
+
+    ERROR_ASSERT(assembler->nTokens - assembler->tokenIndex - 1 >= INSTRUCTIONS[instruction].argument_count, ASSEMBLER_TOO_FEW_ARGUMENTS_ERROR);
+
+    if (instruction == PUSH_code) {
+        if (instructionToken[1].type == REGISTER_TOKEN)
+            instruction = PUSHR_code;
+    }
+
+    AssembleData(assembler, &instruction, sizeof(instruction), stage);
+    assembler->tokenIndex++;
+
+    if (INSTRUCTIONS[instruction].argument_count == 0)
+        return;
+    
+    switch(instruction) {
+        case PUSH_code:
+            AssembleNumber(assembler, stage);
+            CHECK_RETURN;
+            assembler->tokenIndex++;
+            break;
+        case POPR_code:
+        case POPM_code:
+        case POPV_code:
+            AssembleRegister(assembler, stage);
+            CHECK_RETURN;
+            assembler->tokenIndex++;
+            break;
+        case PUSHR_code:
+        case PUSHM_code:
+        case PUSHV_code:
+            AssembleRegister(assembler, stage);
+            CHECK_RETURN;
+            assembler->tokenIndex++;
+            break;
+        case JMP_code:
+        case JB_code:
+        case JBE_code:
+        case JA_code:
+        case JAE_code:
+        case JE_code:
+        case JNE_code:
+            AssembleLabelOrAddress(assembler, stage);
+            CHECK_RETURN;
+            assembler->tokenIndex++;
+            break;
+        case CALL_code:
+            AssembleLabelOrAddress(assembler, stage);
+            CHECK_RETURN;
+            assembler->tokenIndex++;
+            break;
+        default:
+            assert(0);
+            break;
+    }
+}
+
+void AssemblerRunStage(assembler_t *const assembler, assembler_stage_t stage) {
+    assembler->tokenIndex = 0;
+    assembler->byteArrayIndex = 0;
+    while (assembler->tokenIndex < assembler->nTokens) {
+        token_t *token = assembler->tokens + assembler->tokenIndex;
+        if (token->type == LABEL_TOKEN) {
+            if (stage == ASSEMBLER_LABEL_LINKING_STAGE) {
+                ERROR_ASSERT(FindLabel(assembler, token) == NULL, ASSEMBLER_LABEL_REDEFINITION_ERROR);
+                AppendLabel(assembler, token, assembler->byteArrayIndex);
+            }
+            
+            assembler->tokenIndex++;
+        } else {
+            AssembleInstruction(assembler, stage);
+            CHECK_RETURN;
         }
     }
 }
@@ -133,15 +236,9 @@ void Assemble(assembler_t *const assembler) {
 void AssemblerFinalize(assembler_t *const assembler) {
     assert(assembler);
 
-    if (assembler->labels != NULL) {
-        label_t *next_label = assembler->labels;
-        while(next_label != NULL) {
-            label_t *tmp = next_label;
-            next_label = next_label->next;
-            free(tmp);
-        }
-    }
+    free(assembler->tokens);
+    free(assembler->labels);
 
-    ParserFinalize(&assembler->parser);
     WriterFinalize(&assembler->writer);
+    ParserFinalize(&assembler->parser);
 }

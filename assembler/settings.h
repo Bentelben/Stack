@@ -6,11 +6,10 @@
 static char const COMMENT_SYMBOL = ';';
 static char const LABEL_SYMBOL = ':';
 
-static char const *REGISTERS[] = {
+static char const *REGISTERS[REGISTER_COUNT] = {
     "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX"
 };
 
-static register_code_t const REGISTER_COUNT = (register_code_t)(sizeof(REGISTERS)/sizeof(*REGISTERS));
 
 struct instruction_t {
     char const *name;

@@ -20,13 +20,11 @@ struct writer_t {
     FILE *file;
     char *array;
     size_t index;
-    size_t global_index;
-    bool silent;
 };
 
-void WriterInitialize(writer_t *writer, char const *filename, bool silent = false);
+void WriterInitialize(writer_t *writer, char const *filename);
 void WriterFlush(writer_t *writer);
-void WriteElement(writer_t *writer, void const *pointer, size_t size);
+void WriterWriteElement(writer_t *writer, void const *pointer, size_t size);
 void WriterFinalize(writer_t *writer);
 
 

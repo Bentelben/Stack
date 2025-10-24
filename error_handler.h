@@ -94,6 +94,10 @@ do {                            \
 #define ERROR_ASSERT(statement, error_code) \
     if ( !(statement) ) RAISE_ERROR(error_code)
 
+#define CHECK_RETURN \
+do { \
+    if (ERROR_SOURCE_->error != 0) return; \
+} while (0)
 
 #endif
 #endif

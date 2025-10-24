@@ -2,6 +2,7 @@
 #define PROCESSOR_H
 
 #include "../byteio/reader.h"
+#include "../instruction.h"
 #include "stack.h"
 
 #include <stdint.h>
@@ -24,7 +25,9 @@ struct processor_t {
     reader_t reader;
     stack_t stack;
     stack_t call_stack;
-    int registers[8]; // TODO const
+    int registers[REGISTER_COUNT];
+    int ram[RAM_SIZE]; 
+    char vram[VSCREEN_HEIGHT*VSCREEN_WIDTH];
 };
 
 void ProcessorInitialize(processor_t *processor, char const *filename);

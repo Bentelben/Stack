@@ -133,7 +133,7 @@ void StackDump_(FILE *file, stack_t const *const stack, char const *const functi
 }
 #undef PRINT_TABBED_
 
-
+#undef CHECK_RETURN
 #ifdef STACK_VERIFIER
     #define CHECK_RETURN              \
         if (!StackVerify(stack)) {    \

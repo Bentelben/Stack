@@ -17,25 +17,19 @@ END_PRINT_ERROR_FUNCTION
 #include <stdint.h>
 #include <assert.h>
 
-void WriterInitialize(writer_t *const writer, char const *const filename, bool silent) {
+void WriterInitialize(writer_t *const writer, char const *const filename) {
     assert(writer);
 
-    writer->silent = silent;
-
-    if (!silent) {
-        writer->file = fopen(filename, "wb");
-        ERROR_ASSERT(writer->file != NULL, WRITER_FILE_WRITING_ERROR);
-    }
+    writer->file = fopen(filename, "wb");
+    ERROR_ASSERT(writer->file != NULL, WRITER_FILE_WRITING_ERROR);
 
     writer->array = (char *)calloc(WRITER_BUFFER_SIZE, sizeof(*writer->array));
     if (writer->array == NULL) {
-        if (!silent)
-            fclose(writer->file);
+        fclose(writer->file);
         RAISE_ERROR(WRITER_ALLOCATION_ERROR);
     }
 
     writer->index = 0;
-    writer->global_index = 0;
 }
 
 void WriterFlush(writer_t *const writer) {
@@ -44,16 +38,14 @@ void WriterFlush(writer_t *const writer) {
     if (writer->index == 0)
         return;
 
-    if (!writer->silent) {
-        size_t bytes_written = fwrite(writer->array, sizeof(*writer->array), writer->index, writer->file);
-        if (bytes_written != writer->index)
-            RAISE_ERROR(WRITER_FILE_WRITING_ERROR);
-    }
+    size_t bytes_written = fwrite(writer->array, sizeof(*writer->array), writer->index, writer->file);
+    if (bytes_written != writer->index)
+        RAISE_ERROR(WRITER_FILE_WRITING_ERROR);
 
     writer->index = 0;
 }
 
-void WriteElement(writer_t *const writer, void const *const pointer, size_t const size) {
+void WriterWriteElement(writer_t *const writer, void const *const pointer, size_t const size) {
     assert(writer);
 
     ERROR_ASSERT(size <= WRITER_BUFFER_SIZE, WRITER_ELEMENT_BIGGER_THAN_BUFFER_ERROR);
@@ -63,14 +55,12 @@ void WriteElement(writer_t *const writer, void const *const pointer, size_t cons
 
     memcpy(writer->array + writer->index, pointer, size);
     writer->index += size;
-    writer->global_index += size;
 }
 
 void WriterFinalize(writer_t *const writer) {
     assert(writer);
 
     WriterFlush(writer);
-    if (!writer->silent)
-        fclose(writer->file);
+    fclose(writer->file);
     free(writer->array);
 }

@@ -30,8 +30,6 @@ void ParserInitialize(parser_t *const parser, char const *const filename) {
     parser->isEOF = false;
     parser->text = ReadFile(filename);
     parser->cursor = parser->text;
-    parser->line_cursor = parser->cursor;
-    parser->line_index = 1;
     ERROR_ASSERT(parser->text != NULL, PARSER_FILE_READING_ERROR);
 }
 
@@ -50,8 +48,6 @@ static void SkipSpaces(parser_t *const parser) {
                 next_line = strchr(parser->cursor, '\0');
             parser->cursor = next_line - 1;
         } else if (c == '\n') {
-            parser->line_cursor = parser->cursor+1;
-            parser->line_index++;
         } else if (!IsSeparator(c))
             return;
     }
@@ -59,6 +55,12 @@ static void SkipSpaces(parser_t *const parser) {
 
 static bool TryParseNumber(char const *const buffer, size_t const buffer_length, token_t *const token) {
     token->type = NUMBER_TOKEN;
+
+    if (buffer_length == 1 && isalpha(buffer[0])) {
+        token->data.number_data = (int)buffer[0];
+        return true;
+    }
+
     int bytes_read = 0;
     if (sscanf(buffer, "%d%n", &token->data.number_data, &bytes_read) != 1)
         return false;
@@ -98,20 +100,18 @@ static bool TryParseInstruction(char const *const buffer, size_t const buffer_le
     return false;
 }
 
-// TODO strtok
 void ParseToken(parser_t *const parser, token_t *const token) {
     assert(parser);
     assert(token);
 
     SkipSpaces(parser);
-    parser->last_token_cursor = parser->cursor;
 
-    char const *buffer = parser->cursor;
+    char *buffer = parser->cursor;
     size_t buffer_length = 0;
     while (!IsSeparator(buffer[buffer_length])) buffer_length++;
 
-    //for (size_t i = 0; i < buffer_length; i++) printf("%c", buffer[i]);
-    //printf("\n");
+    token->type = UNKNOWN_TOKEN;
+    token->text = buffer;
 
     if (buffer_length == 0) {
         parser->isEOF = true;
