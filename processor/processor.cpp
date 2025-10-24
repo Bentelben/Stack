@@ -99,6 +99,9 @@ DECLARE_PROCESSOR_FUNCTION(DRAW) {
         }
         printf("\n");
     }
+
+    for (size_t y = 0; y < height; y++)
+        printf("\x1b[A");
 }
 
 DECLARE_PROCESSOR_FUNCTION(PUSH) {
@@ -289,6 +292,17 @@ DECLARE_PROCESSOR_FUNCTION(RET) {
     RETURN_IF_ERROR;
 }
 
+DECLARE_PROCESSOR_FUNCTION(SIN) {
+    stack_elem_t argument = 0;
+
+    StackPop(&processor->stack, &argument);
+    RETURN_IF_ERROR;
+
+    stack_elem_t value = sin(argument);
+
+    StackPush(&processor->stack, value);
+    RETURN_IF_ERROR;
+}
 
 void ExecuteInstruction(processor_t *const processor) {
     uint8_t instruction = 0;

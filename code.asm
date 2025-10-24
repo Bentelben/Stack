@@ -8,7 +8,15 @@ POPR TOP_Y
 PUSH -45
 POPR LEFT_X
 
-CALL :fill_canvas
+PUSH 0
+POPR TX
+:loop1
+    CALL :fill_canvas
+    PUSH 1
+    PUSH TX
+    ADD
+    POPR TX
+    JMP :loop1
 HLT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,14 +110,24 @@ HLT
 
 
     CALL :coords
+    PUSHR TX
+    SIN
+    PUSH 1
+    ADD
     PUSH 0.4
+    MUL
     PUSH 3
     PUSH -9
     CALL :func_Amod(x-B)+C-y
     CALL :below
 
     CALL :coords
+    PUSHR TX
+    SIN
+    PUSH 1
+    ADD
     PUSH 0.4
+    MUL
     PUSH 3
     PUSH -10
     CALL :func_Amod(x-B)+C-y

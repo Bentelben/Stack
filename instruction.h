@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 
-size_t const REGISTER_COUNT = 13;
+size_t const REGISTER_COUNT = 14;
 size_t const RAM_SIZE = 200;
 size_t const VSCREEN_HEIGHT = 49;
 size_t const VSCREEN_WIDTH = 180;
