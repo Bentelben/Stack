@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 
-size_t const REGISTER_COUNT = 8;
+size_t const REGISTER_COUNT = 12;
 size_t const RAM_SIZE = 200;
-size_t const VSCREEN_HEIGHT = 20;
-size_t const VSCREEN_WIDTH = 20;
+size_t const VSCREEN_HEIGHT = 49;
+size_t const VSCREEN_WIDTH = 180;
 
 
 typedef uint8_t register_code_t;

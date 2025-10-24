@@ -208,6 +208,9 @@ static void AssembleInstruction(assembler_t *const assembler, assembler_stage_t 
             CHECK_RETURN;
             assembler->tokenIndex++;
             break;
+        case DRAW_code:
+            assembler->tokenIndex++;
+            break;
         default:
             assert(0);
             break;

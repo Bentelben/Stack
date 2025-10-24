@@ -82,9 +82,20 @@ DECLARE_PROCESSOR_FUNCTION(HLT) {
 }
 
 DECLARE_PROCESSOR_FUNCTION(DRAW) {
-    for (size_t y = 0; y < VSCREEN_HEIGHT; y++) {
-        for (size_t x = 0; x < VSCREEN_WIDTH; x++) {
-            printf("%c", processor->vram[y * VSCREEN_HEIGHT + x]);
+    stack_elem_t height_ = 0, width_ = 0;
+    StackPop(&processor->stack, &width_);
+    RETURN_IF_ERROR;
+    StackPop(&processor->stack, &height_);
+    RETURN_IF_ERROR;
+
+    size_t height = (size_t)height_, width = (size_t)width_;
+
+    assert(height <= VSCREEN_HEIGHT); // FIXME remove govnokod yobanij
+    assert(width <= VSCREEN_WIDTH);
+
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
+            printf("%c", processor->vram[y * width + x]);
         }
         printf("\n");
     }
@@ -106,9 +117,7 @@ DECLARE_PROCESSOR_FUNCTION(PUSH) {
             register_code_t register_index = 0; \
             ReadElement(&processor->reader, &register_index, sizeof(register_index)); \
             RETURN_IF_ERROR; \
-            ERROR_ASSERT(register_index < 8, PROCESSOR_WRONG_REGISTER_INDEX_ERROR); \
-            size_t index = (size_t)processor->registers[register_index]; \
-            (void)index; \
+            ERROR_ASSERT(register_index < REGISTER_COUNT, PROCESSOR_WRONG_REGISTER_INDEX_ERROR); \
             task \
             RETURN_IF_ERROR; \
         }
@@ -118,8 +127,6 @@ DECLARE_PROCESSOR_FUNCTION(PUSH) {
             register_code_t register_index = 0; \
             ReadElement(&processor->reader, &register_index, sizeof(register_index)); \
             RETURN_IF_ERROR; \
-            size_t index = (size_t)processor->registers[register_index]; \
-            (void)index; \
             task \
             RETURN_IF_ERROR; \
         }
@@ -130,10 +137,12 @@ CMD_REG_SUBSCRIPT(PUSHR,
 )
 
 CMD_REG_SUBSCRIPT(PUSHM, 
+    size_t index = (size_t)processor->registers[register_index];
     StackPush(&processor->stack, processor->ram[index]);
 )
 
 CMD_REG_SUBSCRIPT(PUSHV, 
+    size_t index = (size_t)processor->registers[register_index];
     StackPush(&processor->stack, (stack_elem_t)processor->vram[index]);
 )
 
@@ -142,6 +151,7 @@ CMD_REG_SUBSCRIPT(POPR,
 )
 
 CMD_REG_SUBSCRIPT(POPM, 
+    size_t index = (size_t)processor->registers[register_index];
     StackPop(&processor->stack, processor->ram + index);
 )
 
@@ -149,6 +159,7 @@ CMD_REG_SUBSCRIPT(POPV,
     stack_elem_t symbol = 0;
     StackPop(&processor->stack, &symbol);
     RETURN_IF_ERROR;
+    size_t index = (size_t)processor->registers[register_index];
     processor->vram[index] = (char)symbol;
 )
 
@@ -210,6 +221,14 @@ DECLARE_PROCESSOR_FUNCTION(SQRT) {
     RETURN_IF_ERROR;
 }
 
+DECLARE_PROCESSOR_FUNCTION(JMP) {
+    instruction_pointer_t jumpDestination = 0;
+    ReadElement(&processor->reader, &jumpDestination, sizeof(jumpDestination));
+    RETURN_IF_ERROR;
+    DoJump(processor, jumpDestination);
+    RETURN_IF_ERROR;
+}
+
 #define JUMPER_(name, condition) \
 DECLARE_PROCESSOR_FUNCTION(name) { \
     instruction_pointer_t jump_destination = 0; \
@@ -225,7 +244,6 @@ DECLARE_PROCESSOR_FUNCTION(name) { \
     RETURN_IF_ERROR; \
 }
 
-JUMPER_(JMP, true)
 JUMPER_(JB,  a <  b)
 JUMPER_(JBE, a <= b)
 JUMPER_(JA,  a >  b)

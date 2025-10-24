@@ -40,6 +40,7 @@ struct token_t {
         } label_data;
     } data;
     char *text;
+    size_t text_length;
 };
 
 void ParserInitialize(parser_t *parser, char const *filename);

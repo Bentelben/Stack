@@ -56,8 +56,8 @@ static void SkipSpaces(parser_t *const parser) {
 static bool TryParseNumber(char const *const buffer, size_t const buffer_length, token_t *const token) {
     token->type = NUMBER_TOKEN;
 
-    if (buffer_length == 1 && isalpha(buffer[0])) {
-        token->data.number_data = (double)(int)buffer[0];
+    if (buffer_length == 3 && buffer[0] == '\'' && buffer[2] == '\'') {
+        token->data.number_data = (double)buffer[1];
         return true;
     }
 
@@ -108,10 +108,16 @@ void ParseToken(parser_t *const parser, token_t *const token) {
 
     char *buffer = parser->cursor;
     size_t buffer_length = 0;
-    while (!IsSeparator(buffer[buffer_length])) buffer_length++;
+    if (buffer[0] == '\'') {
+        buffer_length = 1;
+        while (buffer[buffer_length] != '\'') buffer_length++;
+        buffer_length += 1;
+    } else
+        while (!IsSeparator(buffer[buffer_length])) buffer_length++;
 
     token->type = UNKNOWN_TOKEN;
     token->text = buffer;
+    token->text_length = buffer_length;
 
     if (buffer_length == 0) {
         parser->isEOF = true;

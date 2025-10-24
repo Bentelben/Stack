@@ -7,6 +7,10 @@ static char const COMMENT_SYMBOL = ';';
 static char const LABEL_SYMBOL = ':';
 
 static char const *REGISTERS[REGISTER_COUNT] = {
+    "SCREEN_WIDTH",
+    "SCREEN_HEIGHT", 
+    "TOP_Y",
+    "LEFT_X",
     "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX"
 };
 

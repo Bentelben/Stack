@@ -60,14 +60,15 @@ static void HandleError(assembler_t *const assembler, char const *const input_fi
     printf("%s:%zu\n", input_filename, lineIndex+1);
 
     for (size_t i = 0; i < lineLength; i++)
-        printf("%c", token->text[i]);
+        printf("%c", lineBeginning[i]);
     printf("\n");
 
     size_t const error_symbol_index = (size_t)(token->text - lineBeginning);
     for (size_t i = 0; i < error_symbol_index; i++)
         printf(" ");
-    printf("^\n");
-    printf("\n");
+    for (size_t i = 0; i < token->text_length; i++)
+        printf("^");
+    printf("\n\n");
     
 }
 
